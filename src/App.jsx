@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Compass, X, BookHeart, Image as ImageIcon } from 'lucide-react';
+import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag } from 'lucide-react';
 
 import foto1 from './assets/piquenique.jpg';
 import foto2 from './assets/date.jpg';
@@ -28,12 +28,25 @@ const MEMORIES = [
   { id: 5, url: foto5, title: 'Adesivo' }
 ];
 
+const MERCADO_ITENS = [
+  { id: 1, label: 'VALE ABRAÇOS', cor: '#ff4655' },
+  { id: 2, label: 'VALE DATE', cor: '#ffb000' },
+  { id: 3, label: 'VALE FILME', cor: '#00ccff' },
+  { id: 4, label: 'R$ 200 LEO COSMÉTICOS', cor: '#ffb000' },
+  { id: 5, label: 'VALE JANTAR', cor: '#ff4655' },
+];
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [currentPage, setCurrentPage] = useState('galeria');
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [revelados, setRevelados] = useState({});
+
+  const toggleRevelar = (id) => {
+    setRevelados(prev => ({ ...prev, [id]: true }));
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -66,34 +79,34 @@ export default function App() {
         <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}>
           <BookHeart size={18} /> Leia quando...
         </button>
+        <button
+          onClick={() => setCurrentPage('mercado')}
+          style={currentPage === 'mercado' ? styles.navBtnActive : styles.navBtn}
+        >
+          <ShoppingBag size={18} /> Mercado.Noturno
+        </button>
       </nav>
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
-          {currentPage === 'galeria' ? (
+          
+          {/* TELA 1: GALERIA */}
+          {currentPage === 'galeria' && (
             <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
+              {/* O map das MEMORIES continua igualzinho ao que você já tem */}
               {MEMORIES.map((item) => (
-                <motion.div 
-                  key={item.id} 
-                  layoutId={item.id}
-                  onClick={() => setSelectedId(item.id)}
-                  animate={!selectedId ? { y: [0, -10, 0] } : { y: 0 }}
-                  transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" } }}
-                  style={{ 
-                    ...styles.cardFrame, 
-                    opacity: selectedId === item.id ? 0 : 1,
-                    pointerEvents: selectedId ? 'none' : 'auto' 
-                  }}
-                >
-                  <div style={styles.imageContainer}>
-                    <img src={item.url} style={styles.imageFill} alt={item.title} />
-                  </div>
+                <motion.div key={item.id} layoutId={item.id} onClick={() => setSelectedId(item.id)} animate={!selectedId ? { y: [0, -10, 0] } : { y: 0 }} transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" } }} style={{ ...styles.cardFrame, opacity: selectedId === item.id ? 0 : 1, pointerEvents: selectedId ? 'none' : 'auto' }}>
+                  <div style={styles.imageContainer}><img src={item.url} style={styles.imageFill} alt={item.title} /></div>
                   <p style={styles.cardTitle}>{item.title}</p>
                 </motion.div>
               ))}
             </motion.div>
-          ) : (
+          )}
+
+          {/* TELA 2: MENSAGENS */}
+          {currentPage === 'mensagens' && (
             <motion.div key="mensagens" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={styles.messageContainer}>
+              {/* O código das SPECIAL_MESSAGES continua igualzinho ao que você já tem */}
               <h2 style={{ color: '#fff', marginBottom: '30px' }}>Para cada momento...</h2>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center' }}>
                 {Object.keys(SPECIAL_MESSAGES).map((key) => (
@@ -109,6 +122,40 @@ export default function App() {
               </AnimatePresence>
             </motion.div>
           )}
+
+          {/* TELA 3: MERCADO NOTURNO (NOVO!) */}
+          {currentPage === 'mercado' && (
+            <motion.div key="mercado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.mercadoMain}>
+              <h1 style={styles.mercadoHeader}>MERCADO.NOTURNO</h1>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>ESTOQUE LIMITADO PARA VOCÊ</p>
+              
+              <div style={styles.mercadoGrid}>
+                {MERCADO_ITENS.map((item) => (
+                  <motion.div 
+                    key={item.id}
+                    whileHover={{ scale: 1.02 }}
+                    onClick={() => toggleRevelar(item.id)}
+                    style={{ ...styles.mercadoCard, borderColor: revelados[item.id] ? item.cor : 'rgba(255,255,255,0.3)' }}
+                  >
+                    {!revelados[item.id] ? (
+                      // Carta Escondida (Losango)
+                      <div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}>
+                        <div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div>
+                      </div>
+                    ) : (
+                      // Carta Revelada
+                      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}>
+                        <span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span>
+                        <h3 style={styles.mercadoLabel}>{item.label}</h3>
+                        <div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -118,15 +165,15 @@ export default function App() {
 
       <AnimatePresence>
         {selectedId && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }} 
-            style={styles.overlay} 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={styles.overlay}
             onClick={() => setSelectedId(null)}
           >
-            <motion.div 
-              layoutId={selectedId} 
+            <motion.div
+              layoutId={selectedId}
               style={styles.modalContent}
               transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
@@ -164,5 +211,28 @@ const styles = {
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 },
   modalContent: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative' },
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
-  closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }
+  closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
+  // --- ESTILOS DO MERCADO NOTURNO ---
+  mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '60px' },
+  mercadoHeader: { color: '#ff4655', fontSize: '3rem', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)' },
+  mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
+  mercadoCard: { 
+    height: '260px', 
+    background: 'rgba(0,0,0,0.6)', 
+    backdropFilter: 'blur(10px)',
+    border: '2px solid', 
+    borderRadius: '8px', 
+    cursor: 'pointer', 
+    position: 'relative', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    overflow: 'hidden' 
+  },
+  cardCenter: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  diamondOuter: { width: '40px', height: '40px', border: '2px solid currentColor', transform: 'rotate(45deg)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  diamondInner: { width: '10px', height: '10px', background: 'currentColor' },
+  cardContent: { padding: '20px', zIndex: 2 },
+  mercadoLabel: { color: '#fff', fontSize: '1.2rem', margin: '20px 0', textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.8)' },
+  glowEffect: { position: 'absolute', bottom: '-20px', left: '-20px', right: '-20px', height: '60px', filter: 'blur(40px)', opacity: 0.4, zIndex: 1 },
 };
