@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag, Download } from 'lucide-react';
-import { toPng } from 'html-to-image'; // Importação adicionada
+import { Heart, Compass, X, BookHeart, Image as ImageIcon, Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
+// --- IMPORTAÇÕES DAS IMAGENS ---
 import foto1 from './assets/piquenique.jpg';
 import foto2 from './assets/date.jpg';
 import foto3 from './assets/juntos.jpg';
@@ -32,7 +33,7 @@ const MERCADO_ITENS = [
   { id: 1, label: 'VALE ABRAÇOS', cor: '#ff4655' },
   { id: 2, label: 'VALE DATE', cor: '#ffb000' },
   { id: 3, label: 'VALE FILME', cor: '#00ccff' },
-  { id: 4, label: 'PRESENTE DO LEO COSMÉTICOS', cor: '#ffb000' },
+  { id: 4, label:  ' 1x ITEM:LEO COSMÉTICOS', cor: '#ffb000' },
   { id: 5, label: 'VALE JANTAR', cor: '#ff4655' },
 ];
 
@@ -57,7 +58,7 @@ export default function App() {
     else alert('Senha incorreta! ❤️');
   };
 
-  // Função que transforma a div do vale em uma imagem PNG
+  // Função que transforma a div do vale numa imagem PNG
   const downloadVale = (id, label) => {
     if (cardRefs.current[id]) {
       toPng(cardRefs.current[id], { cacheBust: true })
@@ -93,26 +94,38 @@ export default function App() {
   }
 
   return (
-    // Aplicando o fundo dinâmico aqui
     <div style={{ ...styles.container, background: currentBg }}>
-      <nav style={styles.nav}>
-        <button onClick={() => { setCurrentPage('galeria'); setActiveMessage(null); }} style={currentPage === 'galeria' ? styles.navBtnActive : styles.navBtn}>
-          <ImageIcon size={18} /> Galeria
-        </button>
-        <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}>
-          <BookHeart size={18} /> Leia quando...
-        </button>
-        <button
+      
+      {/* CABEÇALHO RESPONSIVO */}
+      <header style={styles.header}>
+        {/* Menu Principal */}
+        <nav style={styles.nav}>
+          <button onClick={() => { setCurrentPage('galeria'); setActiveMessage(null); }} style={currentPage === 'galeria' ? styles.navBtnActive : styles.navBtn}>
+            <ImageIcon size={18} /> Galeria
+          </button>
+          <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}>
+            <BookHeart size={18} /> Leia...
+          </button>
+        </nav>
+
+        {/* Ícone do Mercado Noturno */}
+        <motion.button
+          whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }}
           onClick={() => setCurrentPage('mercado')}
-          style={currentPage === 'mercado' ? styles.navBtnActiveMercado : styles.navBtn}
+          style={{
+            ...styles.mercadoIconBtn,
+            background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent'
+          }}
+          title="Acessar Mercado.Noturno"
         >
-          <ShoppingBag size={18} /> Mercado.Noturno
-        </button>
-      </nav>
+          <div style={styles.smallDiamond}></div>
+        </motion.button>
+      </header>
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
           
+          {/* TELA 1: GALERIA */}
           {currentPage === 'galeria' && (
             <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
               {MEMORIES.map((item) => (
@@ -124,6 +137,7 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* TELA 2: MENSAGENS */}
           {currentPage === 'mensagens' && (
             <motion.div key="mensagens" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={styles.messageContainer}>
               <h2 style={{ color: '#fff', marginBottom: '30px' }}>Para cada momento...</h2>
@@ -142,6 +156,7 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* TELA 3: MERCADO NOTURNO */}
           {currentPage === 'mercado' && (
             <motion.div key="mercado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>MERCADO.NOTURNO</h1>
@@ -222,12 +237,61 @@ const styles = {
     fontFamily: 'sans-serif', padding: '20px', overflowX: 'hidden', transition: 'background 0.5s ease'
   },
   loginCard: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '40px', borderRadius: '20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.3)' },
-  nav: { position: 'fixed', top: '20px', display: 'flex', gap: '10px', zIndex: 100, padding: '10px', borderRadius: '30px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' },
-  navBtn: { padding: '10px 20px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' },
-  navBtnActive: { padding: '10px 20px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' },
-  navBtnActiveMercado: { padding: '10px 20px', borderRadius: '25px', border: 'none', background: '#ff4655', color: '#fff', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' },
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px' },
+  
+  // --- CABEÇALHO E NAVEGAÇÃO RESPONSIVA ---
+  header: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    padding: '15px 20px',
+    boxSizing: 'border-box',
+    display: 'flex',
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start',
+    zIndex: 100,
+    pointerEvents: 'none' 
+  },
+  nav: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+    padding: '8px 12px',
+    borderRadius: '30px',
+    background: 'rgba(0,0,0,0.7)',
+    backdropFilter: 'blur(10px)',
+    pointerEvents: 'auto',
+    maxWidth: '75%' 
+  },
+  navBtn: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
+  navBtnActive: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
+  
+  // --- ÍCONE SUPERIOR DO MERCADO ---
+  mercadoIconBtn: {
+    pointerEvents: 'auto', 
+    border: '2px solid #ff4655',
+    borderRadius: '4px',
+    width: '35px',
+    height: '50px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)',
+    transition: 'background 0.3s',
+    flexShrink: 0, 
+    marginTop: '2px' 
+  },
+  smallDiamond: {
+    width: '10px',
+    height: '10px',
+    background: '#ff4655',
+    transform: 'rotate(45deg)',
+  },
+
+  // --- RESTANTES COMPONENTES ---
   grid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '100px', maxWidth: '1000px' },
   cardFrame: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', width: '240px', height: '185px', padding: '10px', borderRadius: '20px', cursor: 'pointer' },
   imageContainer: { width: '100%', height: '135px', borderRadius: '12px', overflow: 'hidden', marginBottom: '8px' },
@@ -244,8 +308,16 @@ const styles = {
   
   // --- ESTILOS DO MERCADO NOTURNO ---
   mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '60px' },
-  mercadoHeader: { color: '#ff4655', fontSize: '3rem', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)' },
-  mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
+mercadoHeader: { 
+    color: '#ff4655', 
+    fontSize: 'clamp(1.5rem, 5vw, 3rem)', 
+    margin: 0, 
+    fontWeight: '900', 
+    letterSpacing: '2px', 
+    textShadow: '2px 2px 10px rgba(0,0,0,0.5)',
+    wordBreak: 'break-word', // Garante que a palavra quebra de linha se a tela for minúscula
+    padding: '0 10px'
+  },  mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
   mercadoCard: { 
     height: '260px', 
     backdropFilter: 'blur(10px)',
