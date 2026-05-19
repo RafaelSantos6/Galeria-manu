@@ -86,7 +86,7 @@ export default function App() {
   // Função assíncrona para enviar os dados para o Firebase Storage e Firestore
   const enviarParaRafael = async () => {
     if (!mensagemManu && !imagemManu) {
-      alert('Escreva algo ou adicione uma foto, amor!');
+      alert('Escreva algo ou adicione uma foto! irei ver tudo com muito carinho ❤️');
       return;
     }
     
@@ -244,14 +244,14 @@ export default function App() {
           {currentPage === 'escrever' && (
             <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>DEIXE UM RECADO</h1>
-              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>CARTA PARA O MEU AMOR</p>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>CARTA PARA O RAFA</p>
               
               <div style={styles.formContainer}>
                 {!sucesso ? (
                   <>
                     <textarea 
                       style={styles.textArea} 
-                      placeholder="Escreva aqui tudo o que você sente, amor..."
+                      placeholder="Escreva aqui tudo o que você sente... Pode ser uma mensagem, um poema, uma lembrança ou até mesmo um desabafo. O importante é que venha do coração! ❤️"
                       value={mensagemManu}
                       onChange={(e) => setMensagemManu(e.target.value)}
                     />
