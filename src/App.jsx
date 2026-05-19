@@ -1,7 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Compass, X, BookHeart, Image as ImageIcon, Download } from 'lucide-react';
+import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag, Download, Send, ImagePlus, PenTool } from 'lucide-react';
 import { toPng } from 'html-to-image';
+
+// --- IMPORTAÇÃO DO BANCO DE DADOS ---
+import { db, storage } from './firebase'; 
+import { collection, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // --- IMPORTAÇÕES DAS IMAGENS ---
 import foto1 from './assets/piquenique.jpg';
@@ -33,7 +38,7 @@ const MERCADO_ITENS = [
   { id: 1, label: 'VALE ABRAÇOS', cor: '#ff4655' },
   { id: 2, label: 'VALE DATE', cor: '#ffb000' },
   { id: 3, label: 'VALE FILME', cor: '#00ccff' },
-  { id: 4, label:  ' 1x ITEM:LEO COSMÉTICOS', cor: '#ffb000' },
+  { id: 4, label: 'R$ 200 LEO COSMÉTICOS', cor: '#ffb000' },
   { id: 5, label: 'VALE JANTAR', cor: '#ff4655' },
 ];
 
@@ -45,7 +50,13 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
   
-  // Referência para baixar as imagens corretamente
+  // Estados para a Nova Página de Envio de Cartas/Fotos
+  const [mensagemManu, setMensagemManu] = useState('');
+  const [imagemManu, setImagemManu] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [sucesso, setSucesso] = useState(false);
+  
+  // Referência para baixar as imagens do Mercado Noturno corretamente
   const cardRefs = useRef({});
 
   const toggleRevelar = (id) => {
@@ -58,7 +69,7 @@ export default function App() {
     else alert('Senha incorreta! ❤️');
   };
 
-  // Função que transforma a div do vale numa imagem PNG
+  // Função para baixar os vales do Mercado Noturno
   const downloadVale = (id, label) => {
     if (cardRefs.current[id]) {
       toPng(cardRefs.current[id], { cacheBust: true })
@@ -72,8 +83,40 @@ export default function App() {
     }
   };
 
-  // Lógica do Fundo Dinâmico
-  const currentBg = currentPage === 'mercado' 
+  // Função assíncrona para enviar os dados para o Firebase Storage e Firestore
+  const enviarParaRafael = async () => {
+    if (!mensagemManu && !imagemManu) {
+      alert('Escreva algo ou adicione uma foto, amor!');
+      return;
+    }
+    
+    setEnviando(true);
+    try {
+      let imageUrl = "";
+      
+      // 1. Se ela selecionou uma foto, faz o upload para o Storage
+      if (imagemManu) {
+        const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
+        await uploadBytes(imageRef, imagemManu);
+        imageUrl = await getDownloadURL(imageRef); 
+      }
+
+      await addDoc(collection(db, "cartas_para_rafael"), {
+        texto: mensagemManu, // <--- O erro estava aqui! Troque o "j" pelo "m"
+        fotoUrl: imageUrl,
+        data: new Date()
+      });
+
+      setSucesso(true);
+    } catch (erro) {
+      console.error("Erro ao salvar no Firebase:", erro);
+      alert('Ops! Ocorreu um erro ao enviar a mensagem.');
+    }
+    setEnviando(false);
+  };
+
+  // Definição dinâmica do fundo de ecrã baseado na página ativa
+  const currentBg = (currentPage === 'mercado' || currentPage === 'escrever')
     ? '#0f1923' 
     : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
 
@@ -98,7 +141,6 @@ export default function App() {
       
       {/* CABEÇALHO RESPONSIVO */}
       <header style={styles.header}>
-        {/* Menu Principal */}
         <nav style={styles.nav}>
           <button onClick={() => { setCurrentPage('galeria'); setActiveMessage(null); }} style={currentPage === 'galeria' ? styles.navBtnActive : styles.navBtn}>
             <ImageIcon size={18} /> Galeria
@@ -106,9 +148,12 @@ export default function App() {
           <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}>
             <BookHeart size={18} /> Leia...
           </button>
+          <button onClick={() => setCurrentPage('escrever')} style={currentPage === 'escrever' ? styles.navBtnActive : styles.navBtn}>
+            <PenTool size={18} /> Escrever
+          </button>
         </nav>
 
-        {/* Ícone do Mercado Noturno */}
+        {/* Ícone Estilo Valorant do Mercado Noturno */}
         <motion.button
           whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }}
           onClick={() => setCurrentPage('mercado')}
@@ -184,17 +229,60 @@ export default function App() {
                       )}
                     </motion.div>
 
-                    {/* Botão de Download */}
                     {revelados[item.id] && (
-                      <button 
-                        onClick={() => downloadVale(item.id, item.label)}
-                        style={styles.downloadBtn}
-                      >
+                      <button onClick={() => downloadVale(item.id, item.label)} style={styles.downloadBtn}>
                         <Download size={16} /> Salvar Vale
                       </button>
                     )}
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TELA 4: ESCREVER CARTA (NOVA!) */}
+          {currentPage === 'escrever' && (
+            <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
+              <h1 style={styles.mercadoHeader}>DEIXE UM RECADO</h1>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>CARTA PARA O MEU AMOR</p>
+              
+              <div style={styles.formContainer}>
+                {!sucesso ? (
+                  <>
+                    <textarea 
+                      style={styles.textArea} 
+                      placeholder="Escreva aqui tudo o que você sente, amor..."
+                      value={mensagemManu}
+                      onChange={(e) => setMensagemManu(e.target.value)}
+                    />
+                    
+                    <label style={styles.uploadBtn}>
+                      <ImagePlus size={20} />
+                      {imagemManu ? imagemManu.name : "Anexar uma foto (Opcional)"}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => setImagemManu(e.target.files[0])} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+
+                    <button 
+                      onClick={enviarParaRafael} 
+                      disabled={enviando}
+                      style={{ ...styles.downloadBtn, width: '100%', opacity: enviando ? 0.5 : 1, marginTop: '10px' }}
+                    >
+                      {enviando ? "ENVIANDO..." : <><Send size={16} style={{marginRight: '8px'}}/> ENVIAR PARA O RAFAEL</>}
+                    </button>
+                  </>
+                ) : (
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}>
+                    <Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} />
+                    <h2 style={{ color: '#fff' }}>Recado Guardado!</h2>
+                    <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>Sua mensagem e foto já foram salvas com segurança.</p>
+                    <button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActive}>Enviar outro recado</button>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           )}
@@ -208,18 +296,8 @@ export default function App() {
 
       <AnimatePresence>
         {selectedId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={styles.overlay}
-            onClick={() => setSelectedId(null)}
-          >
-            <motion.div
-              layoutId={selectedId}
-              style={styles.modalContent}
-              transition={{ type: "spring", stiffness: 250, damping: 30 }}
-            >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.overlay} onClick={() => setSelectedId(null)}>
+            <motion.div layoutId={selectedId} style={styles.modalContent} transition={{ type: "spring", stiffness: 250, damping: 30 }}>
               <button style={styles.closeBtn} onClick={(e) => { e.stopPropagation(); setSelectedId(null); }}><X /></button>
               <img src={MEMORIES.find(m => m.id === selectedId).url} style={styles.modalImgFit} alt="Zoom" />
             </motion.div>
@@ -242,54 +320,23 @@ const styles = {
   
   // --- CABEÇALHO E NAVEGAÇÃO RESPONSIVA ---
   header: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    padding: '15px 20px',
-    boxSizing: 'border-box',
-    display: 'flex',
-    justifyContent: 'space-between', 
-    alignItems: 'flex-start',
-    zIndex: 100,
-    pointerEvents: 'none' 
+    position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 20px', boxSizing: 'border-box',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 100, pointerEvents: 'none' 
   },
   nav: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
-    padding: '8px 12px',
-    borderRadius: '30px',
-    background: 'rgba(0,0,0,0.7)',
-    backdropFilter: 'blur(10px)',
-    pointerEvents: 'auto',
-    maxWidth: '75%' 
+    display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px 12px', borderRadius: '30px',
+    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', pointerEvents: 'auto', maxWidth: '75%' 
   },
   navBtn: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
   navBtnActive: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
   
   // --- ÍCONE SUPERIOR DO MERCADO ---
   mercadoIconBtn: {
-    pointerEvents: 'auto', 
-    border: '2px solid #ff4655',
-    borderRadius: '4px',
-    width: '35px',
-    height: '50px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)',
-    transition: 'background 0.3s',
-    flexShrink: 0, 
-    marginTop: '2px' 
+    pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '50px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+    boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, marginTop: '2px' 
   },
-  smallDiamond: {
-    width: '10px',
-    height: '10px',
-    background: '#ff4655',
-    transform: 'rotate(45deg)',
-  },
+  smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
 
   // --- RESTANTES COMPONENTES ---
   grid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '100px', maxWidth: '1000px' },
@@ -307,39 +354,20 @@ const styles = {
   closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
   
   // --- ESTILOS DO MERCADO NOTURNO ---
-  mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '60px' },
-mercadoHeader: { 
-    color: '#ff4655', 
-    fontSize: 'clamp(1.5rem, 5vw, 3rem)', 
-    margin: 0, 
-    fontWeight: '900', 
-    letterSpacing: '2px', 
-    textShadow: '2px 2px 10px rgba(0,0,0,0.5)',
-    wordBreak: 'break-word', // Garante que a palavra quebra de linha se a tela for minúscula
-    padding: '0 10px'
-  },  mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
-  mercadoCard: { 
-    height: '260px', 
-    backdropFilter: 'blur(10px)',
-    border: '2px solid', 
-    borderRadius: '8px', 
-    cursor: 'pointer', 
-    position: 'relative', 
-    display: 'flex', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    overflow: 'hidden' 
-  },
+  mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '100px', padding: '0 10px', boxSizing: 'border-box' },
+  mercadoHeader: { color: '#ff4655', fontSize: 'clamp(1.8rem, 8vw, 3rem)', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)', wordBreak: 'break-word' },
+  mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
+  mercadoCard: { height: '260px', backdropFilter: 'blur(10px)', border: '2px solid', borderRadius: '8px', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   cardCenter: { display: 'flex', justifyContent: 'center', alignItems: 'center' },
   diamondOuter: { width: '40px', height: '40px', border: '2px solid currentColor', transform: 'rotate(45deg)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   diamondInner: { width: '10px', height: '10px', background: 'currentColor' },
   cardContent: { padding: '20px', zIndex: 2 },
   mercadoLabel: { color: '#fff', fontSize: '1.2rem', margin: '20px 0', textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.8)' },
   glowEffect: { position: 'absolute', bottom: '-20px', left: '-20px', right: '-20px', height: '60px', filter: 'blur(40px)', opacity: 0.4, zIndex: 1 },
-  downloadBtn: { 
-    background: '#00ff88', border: 'none', color: '#000', 
-    padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold',
-    display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', justifyContent: 'center',
-    boxShadow: '0 4px 10px rgba(0, 255, 136, 0.2)'
-  },
+  downloadBtn: { background: '#00ff88', border: 'none', color: '#000', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0, 255, 136, 0.2)' },
+  
+  // --- ESTILOS DO FORMULÁRIO DE CARTAS (NOVOS!) ---
+  formContainer: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '15px', padding: '30px', maxWidth: '500px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px', boxSizing: 'border-box' },
+  textArea: { width: '100%', height: '150px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: '#fff', padding: '15px', fontSize: '1rem', fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' },
+  uploadBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px dashed #ff4655', color: '#ff4655', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' },
 };
