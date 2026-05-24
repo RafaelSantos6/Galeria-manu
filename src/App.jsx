@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag, Download, Send, ImagePlus, PenTool } from 'lucide-react';
+import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag, Download, Send, ImagePlus, PenTool, Music } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 // --- IMPORTAÇÃO DO BANCO DE DADOS ---
@@ -14,6 +14,11 @@ import foto2 from './assets/date.jpg';
 import foto3 from './assets/juntos.jpg';
 import foto4 from './assets/fofa.jpg';
 import foto5 from './assets/adesivo.jpg';
+import foto6 from './assets/Thousand.jpg';
+import foto7 from './assets/Unwritten.jpg';
+import foto8 from './assets/Tears.jpg';
+import foto9 from './assets/FixYou.jpg';
+import foto10 from './assets/Tekit.jpg';
 
 const SPECIAL_MESSAGES = {
   "Estiver com saudades": "Lembre-se que cada segundo longe é um segundo mais perto do nosso próximo abraço. Eu te amo!",
@@ -42,6 +47,15 @@ const MERCADO_ITENS = [
   { id: 5, label: 'VALE JANTAR', cor: '#ff4655' },
 ];
 
+// --- CONFIGURAÇÃO DA SUA TRILHA SONORA ---
+const NOSSAS_MUSICAS = [
+  { id: 1, titulo: 'Nossa Música Principal', artista: 'A Thousand Years - Canção de Christina Perri ', foto: foto6, audioUrl: '/Thousand.mp3' },
+  { id: 2, titulo: 'Música que me lembra você', artista: 'Unwritten - Canção de Natasha Bedingfield', foto: foto7, audioUrl: '/Unwritten.mp3' },
+  { id: 3, titulo: 'Momento Especial', artista: 'My Tears Ricochet - Canção de Taylor Swift', foto: foto8, audioUrl: '/TearsRicochet.mp3' },
+  { id: 4, titulo: 'Música para dias chuvosos', artista: 'Fix You - Canção de Coldplay', foto: foto9, audioUrl: '/FixYou.mp3' },
+  {id: 5 , titulo: 'Música que comecei a gostar mais por você', artista: 'Cafuné - Tek It', foto: foto10, audioUrl: '/Cafuné.mp3' }
+];
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -50,13 +64,17 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
   
-  // Estados para a Nova Página de Envio de Cartas/Fotos
+  // Estados para a Página de Envio de Cartas/Fotos
   const [mensagemManu, setMensagemManu] = useState('');
   const [imagemManu, setImagemManu] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   
-  // Referência para baixar as imagens do Mercado Noturno corretamente
+  // Controladores de áudio para evitar que toquem ao mesmo tempo
+  const [playingAudioId, setPlayingAudioId] = useState(null);
+  const audioRefs = useRef({});
+  
+  // Referência para baixar as imagens do Mercado Noturno
   const cardRefs = useRef({});
 
   const toggleRevelar = (id) => {
@@ -69,7 +87,6 @@ export default function App() {
     else alert('Senha incorreta! ❤️');
   };
 
-  // Função para baixar os vales do Mercado Noturno
   const downloadVale = (id, label) => {
     if (cardRefs.current[id]) {
       toPng(cardRefs.current[id], { cacheBust: true })
@@ -83,7 +100,6 @@ export default function App() {
     }
   };
 
-  // Função assíncrona para enviar os dados para o Firebase Storage e Firestore
   const enviarParaRafael = async () => {
     if (!mensagemManu && !imagemManu) {
       alert('Escreva algo ou adicione uma foto! irei ver tudo com muito carinho ❤️');
@@ -94,7 +110,6 @@ export default function App() {
     try {
       let imageUrl = "";
       
-      // 1. Se ela selecionou uma foto, faz o upload para o Storage
       if (imagemManu) {
         const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
         await uploadBytes(imageRef, imagemManu);
@@ -102,7 +117,7 @@ export default function App() {
       }
 
       await addDoc(collection(db, "cartas_para_rafael"), {
-        texto: mensagemManu, // <--- O erro estava aqui! Troque o "j" pelo "m"
+        texto: mensagemManu,
         fotoUrl: imageUrl,
         data: new Date()
       });
@@ -115,7 +130,21 @@ export default function App() {
     setEnviando(false);
   };
 
-  // Definição dinâmica do fundo de ecrã baseado na página ativa
+  // Gerenciador inteligente de áudio único
+  const handlePlayAudio = (id) => {
+    NOSSAS_MUSICAS.forEach((track) => {
+      const audioElement = audioRefs.current[track.id];
+      if (audioElement) {
+        if (track.id === id) {
+          audioElement.play();
+          setPlayingAudioId(id);
+        } else {
+          audioElement.pause();
+        }
+      }
+    });
+  };
+
   const currentBg = (currentPage === 'mercado' || currentPage === 'escrever')
     ? '#0f1923' 
     : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
@@ -172,14 +201,25 @@ export default function App() {
           
           {/* TELA 1: GALERIA */}
           {currentPage === 'galeria' && (
-            <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
-              {MEMORIES.map((item) => (
-                <motion.div key={item.id} layoutId={item.id} onClick={() => setSelectedId(item.id)} animate={!selectedId ? { y: [0, -10, 0] } : { y: 0 }} transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" } }} style={{ ...styles.cardFrame, opacity: selectedId === item.id ? 0 : 1, pointerEvents: selectedId ? 'none' : 'auto' }}>
-                  <div style={styles.imageContainer}><img src={item.url} style={styles.imageFill} alt={item.title} /></div>
-                  <p style={styles.cardTitle}>{item.title}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+              <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
+                {MEMORIES.map((item) => (
+                  <motion.div key={item.id} layoutId={item.id} onClick={() => setSelectedId(item.id)} animate={!selectedId ? { y: [0, -10, 0] } : { y: 0 }} transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" } }} style={{ ...styles.cardFrame, opacity: selectedId === item.id ? 0 : 1, pointerEvents: selectedId ? 'none' : 'auto' }}>
+                    <div style={styles.imageContainer}><img src={item.url} style={styles.imageFill} alt={item.title} /></div>
+                    <p style={styles.cardTitle}>{item.title}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentPage('musicas')}
+                style={styles.musicPageBtn}
+              >
+                <Music size={18} /> Ouvir Nossa Trilha Sonora ❤️
+              </motion.button>
+            </div>
           )}
 
           {/* TELA 2: MENSAGENS */}
@@ -240,7 +280,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* TELA 4: ESCREVER CARTA (NOVA!) */}
+          {/* TELA 4: ESCREVER CARTA */}
           {currentPage === 'escrever' && (
             <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>DEIXE UM RECADO</h1>
@@ -251,7 +291,7 @@ export default function App() {
                   <>
                     <textarea 
                       style={styles.textArea} 
-                      placeholder="Escreva aqui tudo o que você sente... Pode ser uma mensagem, um poema, uma lembrança ou até mesmo um desabafo. O importante é que venha do coração! ❤️"
+                      placeholder="Escreva aqui tudo o que você sente... Pode ser uma mensagem, um poema, uma lembrança ou até mesmo um desabafo."
                       value={mensagemManu}
                       onChange={(e) => setMensagemManu(e.target.value)}
                     />
@@ -287,12 +327,35 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* TELA 5: TRILHA SONORA */}
+          {currentPage === 'musicas' && (
+            <motion.div key="musicas" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.mercadoMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)' }}>NOSSA TRILHA SONORA</h1>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>MÚSICAS ESPECIAIS COM NOSSAS MEMÓRIAS</p>
+              
+              <div style={styles.musicGrid}>
+                {NOSSAS_MUSICAS.map((track) => (
+                  <motion.div key={track.id} whileHover={{ y: -5 }} style={styles.musicCard}>
+                    <img src={track.foto} style={styles.musicImg} alt={track.titulo} />
+                    <div style={styles.musicInfo}>
+                      <h4 style={{ color: '#fff', margin: '0 0 4px 0', fontSize: '1.1rem' }}>{track.titulo}</h4>
+                      <p style={{ color: '#ddd', margin: '0 0 12px 0', fontSize: '0.85rem', fontStyle: 'italic' }}>{track.artista}</p>
+                      <audio 
+                        ref={(el) => (audioRefs.current[track.id] = el)}
+                        controls 
+                        src={track.audioUrl} 
+                        onPlay={() => handlePlayAudio(track.id)}
+                        style={styles.audioPlayer} 
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
-
-      <button onClick={() => alert('Meu amor te encontra onde nós podemos ter o primeiro encontro depois do e-mail  🧭❤️')} style={styles.compassBtn}>
-        <Compass size={20} /> Bússola
-      </button>
 
       <AnimatePresence>
         {selectedId && (
@@ -318,7 +381,6 @@ const styles = {
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px' },
   
-  // --- CABEÇALHO E NAVEGAÇÃO RESPONSIVA ---
   header: {
     position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 20px', boxSizing: 'border-box',
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 100, pointerEvents: 'none' 
@@ -330,7 +392,6 @@ const styles = {
   navBtn: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
   navBtnActive: { padding: '8px 15px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' },
   
-  // --- ÍCONE SUPERIOR DO MERCADO ---
   mercadoIconBtn: {
     pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '50px',
     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -338,7 +399,6 @@ const styles = {
   },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
 
-  // --- RESTANTES COMPONENTES ---
   grid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '100px', maxWidth: '1000px' },
   cardFrame: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', width: '240px', height: '185px', padding: '10px', borderRadius: '20px', cursor: 'pointer' },
   imageContainer: { width: '100%', height: '135px', borderRadius: '12px', overflow: 'hidden', marginBottom: '8px' },
@@ -353,7 +413,6 @@ const styles = {
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
   closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
   
-  // --- ESTILOS DO MERCADO NOTURNO ---
   mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '100px', padding: '0 10px', boxSizing: 'border-box' },
   mercadoHeader: { color: '#ff4655', fontSize: 'clamp(1.8rem, 8vw, 3rem)', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)', wordBreak: 'break-word' },
   mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
@@ -366,8 +425,15 @@ const styles = {
   glowEffect: { position: 'absolute', bottom: '-20px', left: '-20px', right: '-20px', height: '60px', filter: 'blur(40px)', opacity: 0.4, zIndex: 1 },
   downloadBtn: { background: '#00ff88', border: 'none', color: '#000', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0, 255, 136, 0.2)' },
   
-  // --- ESTILOS DO FORMULÁRIO DE CARTAS (NOVOS!) ---
   formContainer: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '15px', padding: '30px', maxWidth: '500px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px', boxSizing: 'border-box' },
   textArea: { width: '100%', height: '150px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: '#fff', padding: '15px', fontSize: '1rem', fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' },
   uploadBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px dashed #ff4655', color: '#ff4655', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' },
+
+  // --- ESTILOS DA PÁGINA DE MÚSICAS ---
+  musicPageBtn: { background: '#fff', color: '#ff85a2', border: 'none', padding: '12px 25px', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginTop: '35px' },
+  musicGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', padding: '10px', width: '100%', maxWidth: '900px', margin: '0 auto' },
+  musicCard: { display: 'flex', background: 'rgba(0, 0, 0, 0.67)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '16px', padding: '15px', alignItems: 'center', gap: '15px', textAlign: 'left', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' },
+  musicImg: { width: '80px', height: '80px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.2)' },
+  musicInfo: { flex: 1, display: 'flex', flexDirection: 'column' },
+  audioPlayer: { width: '100%', height: '32px', borderRadius: '8px' }
 };
