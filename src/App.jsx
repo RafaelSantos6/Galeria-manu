@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Compass, X, BookHeart, Image as ImageIcon, ShoppingBag, Download, Send, ImagePlus, PenTool, Music, Gift } from 'lucide-react';
+import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 // --- IMPORTAÇÃO DO BANCO DE DADOS ---
@@ -55,7 +55,7 @@ const NOSSAS_MUSICAS = [
   { id: 5, titulo: 'Gosto mais por sua causa', artista: 'Tek It - Cafuné', foto: foto10, audioUrl: '/Cafuné.mp3' }
 ];
 
-// --- MOTIVOS PARA AMAR (IDEIA 2) ---
+// --- MOTIVOS PARA AMAR ---
 const MOTIVOS = [
   "Amo a sua paixão pela sua profissão de designer.",
   "Amo como a sua criatividade transforma qualquer momento simples em algo especial.",
@@ -85,13 +85,13 @@ const MOTIVOS = [
   "Amo como você desperta o meu lado mais poético.",
   "Amo que você é a musa inspiradora dos meus melhores pensamentos e poesias.",
   "Amo como o meu coração acelera (e desacelera) do jeito certo quando te vejo.",
-  "Amo escrever sobre você, because o amor que sinto transborda em palavras.",
+  "Amo escrever sobre você, porque o amor que sinto transborda em palavras.",
   "Amo a paz que você me traz em dias cheios de responsabilidades.",
   "Amo o fato de você ser o meu refúgio seguro depois de um longo dia de trabalho.",
   "Amo como você me dá forças para enfrentar qualquer desafio na rotina militar.",
-  "Amo o orgulho que sinto no peito toda vez que digo que você é a minha.",
+  "Amo o orgulho que sinto no peito toda vez que digo que você é a minha namorada.",
   "Amo como o seu abraço parece um encaixe perfeito, feito sob medida para mim.",
-  "Amo o fato de você me fazer querer ser a melhor versão de mi mesmo todos os dias.",
+  "Amo o fato de você me fazer querer ser a melhor versão de mim mesmo todos os dias.",
   "Amo como o seu sorriso ilumina qualquer lugar.",
   "Amo o jeito carinhoso e doce que você cuida de mim.",
   "Amo o jeito como você me apoia nos meus hobbies e no meu trabalho com tecnologia.",
@@ -170,9 +170,23 @@ const MOTIVOS = [
   "Amo a sensibilidade que você transmite tanto nos seus olhos castanhos quanto nos seus projetos."
 ];
 
+// 👇 AJUSTE A DATA DO INÍCIO DO NAMORO AQUI (ANO-MÊS-DIA T HORA:MINUTO:SEGUNDO) 👇
+const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00'); 
+
+// --- NOSSA HISTÓRIA ---
+const NOSSA_HISTORIA = [
+  { id: 1, data: 'O Começo', titulo: 'Como tudo começou', descricao: 'O dia em que os nossos caminhos se cruzaram e a minha vida ficou muito mais colorida eu mal conseguia olhar em seus olhos, mas não pude esconder os sentimentos que senti.' },
+  { id: 2, data: 'O Primeiro Beijo', titulo: 'O instante mágico', descricao: 'O momento exato em que eu tive a certeza que você era a pessoa certa para mim, em uma sala de cinema e com nossos amigos em comum.' },
+  { id: 3, data: 'A distância', titulo: 'Tempos complicados', descricao: 'Em minha rotina cansada no quartel, senti que a cada vez que nos falávamos, o coração acelerava e a saudade aumentava, e aos poucos fui sumindo.' },
+  { id: 4, data: 'O Outubro', titulo: 'Nosso momento mais turbulento', descricao: 'Mesmo tendo outros amores, eu achava que estar próximo de você era o que me fazia sentir vivo. mas o mês de outubro me marcou, fui afastado e com o coração apertado eu atendi o pedido de seu coração, mas nunca deixei de pensar em você.' },
+  { id: 5, data: 'O Reencontro', titulo: 'Voltando a ser nós', descricao: 'Depois de um tempo afastados, um E-mail cheio de sentimento e o destino nos colocou frente a frente novamente, e foi como se o tempo tivesse parado. A conexão que sempre tivemos voltou com força total, e eu soube que era hora de lutar por nós, meu maior desejo era lutar por nós.' },
+  { id: 6, data: 'Hoje', titulo: 'O presente e o futuro', descricao: 'Foi como um sonho novamente, um sonho que eu tive que acordar... eu ainda espero por você todos os dias, mesmo que seja pior para mim eu ainda quero que seja você, meu amor, talvez não leia isso, mas eu te amo, não importa o tempo que precisse para se curar de suas feridas, eu estive aqui e vou estar para sempre! Sinto sua falta.' }
+];
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [showSuccessAnim, setShowSuccessAnim] = useState(false); // NOVO ESTADO: Controla a explosão de corações
   const [currentPage, setCurrentPage] = useState('galeria');
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
@@ -184,34 +198,61 @@ export default function App() {
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   
-  // Estados para Músicas
+  // Estados para Músicas, Pote e Cronômetro
   const [playingAudioId, setPlayingAudioId] = useState(null);
-  const audioRefs = useRef({});
-  
-  // Estados para o Pote de Motivos
   const [motivoSorteado, setMotivoSorteado] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
+  const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Referência para baixar as imagens do Mercado Noturno
+  const audioRefs = useRef({});
   const cardRefs = useRef({});
 
-  // Corações da tela inicial
-  const coracoesIniciais = Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    delay: Math.random() * 5,
-    duration: Math.random() * 5 + 4,
-    size: Math.random() * 20 + 10
-  }));
+  // Corações da chuva inicial
+  const coracoesIniciais = useRef(
+    Array.from({ length: 30 }).map((_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: Math.random() * 5,
+      duration: Math.random() * 6 + 5,
+      size: Math.random() * 20 + 15
+    }))
+  ).current;
+
+  // Atualizador do Cronômetro do Amor
+  useEffect(() => {
+    if (currentPage === 'tempo') {
+      const interval = setInterval(() => {
+        const now = new Date();
+        const difference = now - DATA_DO_NAMORO;
+        if (difference > 0) {
+          setTimeTogether({
+            days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+            minutes: Math.floor((difference / 1000 / 60) % 60),
+            seconds: Math.floor((difference / 1000) % 60)
+          });
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentPage]);
 
   const toggleRevelar = (id) => {
     setRevelados(prev => ({ ...prev, [id]: true }));
   };
 
+  // --- NOVA LÓGICA DE LOGIN COM ANIMAÇÃO ---
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === '2411') setIsAuthenticated(true);
-    else alert('Senha incorreta! ❤️');
+    if (password === '2411') {
+      setShowSuccessAnim(true); // Dispara a explosão de corações
+      // Espera 1.8 segundos para a animação acontecer antes de mudar de tela
+      setTimeout(() => {
+        setIsAuthenticated(true);
+      }, 1800);
+    } else {
+      alert('Senha incorreta! ❤️');
+    }
   };
 
   const downloadVale = (id, label) => {
@@ -229,7 +270,7 @@ export default function App() {
 
   const enviarParaRafael = async () => {
     if (!mensagemManu && !imagemManu) {
-      alert('Escreva algo ou adicione uma foto! irei ver tudo com muito carinho ❤️');
+      alert('Escreva algo ou adicione uma foto! Irei ver tudo com muito carinho ❤️');
       return;
     }
     
@@ -273,7 +314,6 @@ export default function App() {
     setIsShaking(true);
     setMotivoSorteado(null);
     
-    // Simula o tempo balançando o pote antes de revelar
     setTimeout(() => {
       const random = MOTIVOS[Math.floor(Math.random() * MOTIVOS.length)];
       setMotivoSorteado(random);
@@ -281,28 +321,37 @@ export default function App() {
     }, 800);
   };
 
-  const currentBg = (currentPage === 'mercado' || currentPage === 'escrever')
+  const currentBg = (currentPage === 'mercado' || currentPage === 'escrever' || currentPage === 'tempo' || currentPage === 'historia')
     ? '#0f1923' 
     : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
 
-  // --- TELA DE LOGIN COM CHUVA DE CORAÇÕES ---
+  // --- TELA DE LOGIN ---
   if (!isAuthenticated) {
     return (
       <div style={{ ...styles.container, overflow: 'hidden', position: 'relative' }}>
-        {/* Chuva de Corações */}
-        {coracoesIniciais.map((c) => (
-          <motion.div
-            key={c.id}
-            initial={{ y: '100vh', opacity: 0.6, x: 0 }}
-            animate={{ y: '-10vh', opacity: 0, x: [0, -30, 30, 0] }}
-            transition={{ duration: c.duration, repeat: Infinity, delay: c.delay, ease: 'linear' }}
-            style={{ position: 'absolute', bottom: '-10%', left: c.left, color: 'rgba(255, 255, 255, 0.5)', zIndex: 0, pointerEvents: 'none' }}
-          >
-            <Heart fill="rgba(255, 255, 255, 0.4)" stroke="none" size={c.size} />
-          </motion.div>
-        ))}
+        
+        {/* Camada Transparente para a Animação dos Corações de Fundo (Chuva) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 0 }}>
+          {coracoesIniciais.map((c) => (
+            <motion.div
+              key={c.id}
+              initial={{ y: '110vh', opacity: 0 }}
+              animate={{ y: '-10vh', opacity: [0, 0.8, 0.8, 0], x: [0, -30, 30, 0] }}
+              transition={{ duration: c.duration, repeat: Infinity, delay: c.delay, ease: 'easeInOut' }}
+              style={{ position: 'absolute', left: c.left, color: 'rgba(255, 255, 255, 0.5)' }}
+            >
+              <Heart fill="rgba(255, 255, 255, 0.3)" stroke="rgba(255, 255, 255, 0.5)" size={c.size} />
+            </motion.div>
+          ))}
+        </div>
 
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ ...styles.loginCard, zIndex: 10 }}>
+        {/* Cartão de Login - Desaparece ao acertar a senha */}
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }} 
+          animate={showSuccessAnim ? { scale: 1.2, opacity: 0 } : { scale: 1, opacity: 1 }} 
+          transition={{ duration: 0.5 }}
+          style={{ ...styles.loginCard, zIndex: 10 }}
+        >
           <Heart color="#ff85a2" fill="#ff85a2" size={48} />
           <h2 style={{ color: '#fff', margin: '20px 0' }}>Céu de Memórias</h2>
           <form onSubmit={handleLogin}>
@@ -311,6 +360,33 @@ export default function App() {
             <button type="submit" style={styles.button}>Entrar</button>
           </form>
         </motion.div>
+
+        {/* EXPLOSÃO DE CORAÇÕES ROSA AO LOGAR */}
+        {showSuccessAnim && (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 50, pointerEvents: 'none' }}>
+            {Array.from({ length: 40 }).map((_, i) => {
+              const angle = Math.random() * Math.PI * 2;
+              const velocity = Math.random() * 300 + 100; // O quão longe o coração vai voar
+              return (
+                <motion.div
+                  key={`exp-${i}`}
+                  initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
+                  animate={{ 
+                    opacity: [1, 1, 0], 
+                    scale: [0, Math.random() * 1.5 + 0.8, 0],
+                    x: Math.cos(angle) * velocity,
+                    y: Math.sin(angle) * velocity
+                  }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  style={{ position: 'absolute' }}
+                >
+                  <Heart fill="#ff85a2" color="#ff85a2" size={Math.random() * 20 + 15} />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
       </div>
     );
   }
@@ -325,13 +401,19 @@ export default function App() {
             <ImageIcon size={16} /> Galeria
           </button>
           <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}>
-            <BookHeart size={16} /> Leia...
+            <BookHeart size={16} /> Momentos
           </button>
           <button onClick={() => setCurrentPage('escrever')} style={currentPage === 'escrever' ? styles.navBtnActive : styles.navBtn}>
             <PenTool size={16} /> Cartas
           </button>
           <button onClick={() => setCurrentPage('motivos')} style={currentPage === 'motivos' ? styles.navBtnActive : styles.navBtn}>
             <Gift size={16} /> Motivos
+          </button>
+          <button onClick={() => setCurrentPage('tempo')} style={currentPage === 'tempo' ? styles.navBtnActive : styles.navBtn}>
+            <Clock size={16} /> Tempo
+          </button>
+          <button onClick={() => setCurrentPage('historia')} style={currentPage === 'historia' ? styles.navBtnActive : styles.navBtn}>
+            <Star size={16} /> História
           </button>
         </nav>
 
@@ -485,12 +567,12 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* TELA 6: POTE DE MOTIVOS */}
           {currentPage === 'motivos' && (
             <motion.div key="motivos" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.messageContainer}>
               <h2 style={{ color: '#fff', marginBottom: '10px' }}>Pote de Motivos</h2>
               <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '40px', fontSize: '0.95rem' }}>Clique no pote para descobrir mais de 100 motivos do porquê eu te amo.</p>
               
-              {/* O POTE ANIMADO */}
               <motion.div 
                 onClick={sortearMotivo}
                 animate={isShaking ? { rotate: [-5, 5, -5, 5, 0], scale: 1.05 } : { rotate: 0, scale: 1 }}
@@ -504,7 +586,6 @@ export default function App() {
                 </div>
               </motion.div>
 
-              {/* O PAPEL REVELADO */}
               <AnimatePresence>
                 {motivoSorteado && !isShaking && (
                   <motion.div 
@@ -519,6 +600,61 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* TELA 7: CRONÔMETRO DO AMOR */}
+          {currentPage === 'tempo' && (
+            <motion.div key="tempo" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} style={styles.mercadoMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)' }}>NOSSO TEMPO</h1>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>CADA SEGUNDO COM VOCÊ É UM PRESENTE</p>
+              
+              <div style={styles.timerContainer}>
+                <div style={styles.timeBox}>
+                  <span style={styles.timeNum}>{timeTogether.days}</span>
+                  <span style={styles.timeLabel}>Dias</span>
+                </div>
+                <div style={styles.timeBox}>
+                  <span style={styles.timeNum}>{timeTogether.hours}</span>
+                  <span style={styles.timeLabel}>Horas</span>
+                </div>
+                <div style={styles.timeBox}>
+                  <span style={styles.timeNum}>{timeTogether.minutes}</span>
+                  <span style={styles.timeLabel}>Minutos</span>
+                </div>
+                <div style={styles.timeBox}>
+                  <span style={styles.timeNum}>{timeTogether.seconds}</span>
+                  <span style={styles.timeLabel}>Segundos</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TELA 8: NOSSA HISTÓRIA */}
+          {currentPage === 'historia' && (
+            <motion.div key="historia" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)' }}>NOSSA HISTÓRIA</h1>
+              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>OS CAPÍTULOS MAIS LINDOS DA MINHA VIDA</p>
+
+              <div style={styles.timeline}>
+                <div style={styles.timelineLine}></div>
+                {NOSSA_HISTORIA.map((item, index) => (
+                  <motion.div 
+                    key={item.id} 
+                    initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }} 
+                    whileInView={{ opacity: 1, x: 0 }} 
+                    viewport={{ once: true }} 
+                    style={styles.timelineItem}
+                  >
+                    <div style={styles.timelineDot}><Heart size={16} color="#fff" fill="#fff" /></div>
+                    <div style={styles.timelineContent}>
+                      <span style={styles.timelineDate}>{item.data}</span>
+                      <h3 style={styles.timelineTitle}>{item.titulo}</h3>
+                      <p style={styles.timelineText}>{item.descricao}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
           )}
 
@@ -549,32 +685,25 @@ const styles = {
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
   
-  // --- CABEÇALHO E NAVEGAÇÃO RESPONSIVA (CORRIGIDO) ---
   header: {
     position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 20px', boxSizing: 'border-box',
-    display: 'flex', justifyContent: 'space-between', 
-    alignItems: 'center', // CORREÇÃO: Alinhamento vertical centralizado para acompanhar a barra
-    zIndex: 100, pointerEvents: 'none' 
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100, pointerEvents: 'none' 
   },
   nav: {
-    display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px', 
-    borderRadius: '20px', // CORREÇÃO: Borda ajustada para ficar bonita mesmo com 2 linhas
+    display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px', borderRadius: '20px', 
     background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', pointerEvents: 'auto', 
-    maxWidth: 'calc(100% - 60px)', // CORREÇÃO: Limite de largura para não esmagar o botão do mercado
-    justifyContent: 'center' // CORREÇÃO: Mantém os botões centralizados quando quebram a linha
+    maxWidth: 'calc(100% - 60px)', justifyContent: 'center' 
   },
   navBtn: { padding: '8px 12px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
   navBtnActive: { padding: '8px 12px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
   
   mercadoIconBtn: {
-    pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', 
-    height: '40px', // CORREÇÃO: Altura levemente reduzida para alinhar melhor visualmente
+    pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', 
     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
     boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 
   },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
 
-  // --- RESTANTES COMPONENTES ---
   grid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '100px', maxWidth: '1000px' },
   cardFrame: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', width: '240px', height: '185px', padding: '10px', borderRadius: '20px', cursor: 'pointer' },
   imageContainer: { width: '100%', height: '135px', borderRadius: '12px', overflow: 'hidden', marginBottom: '8px' },
@@ -583,7 +712,6 @@ const styles = {
   messageContainer: { textAlign: 'center', marginTop: '100px', maxWidth: '600px', width: '100%' },
   msgBtn: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', padding: '15px', borderRadius: '15px', color: '#fff', cursor: 'pointer', width: '180px' },
   messageDisplay: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '25px', borderRadius: '20px', marginTop: '30px', border: '1px solid rgba(255,255,255,0.3)' },
-  compassBtn: { position: 'fixed', bottom: '25px', padding: '12px 25px', borderRadius: '30px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 'bold' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 },
   modalContent: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative' },
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
@@ -615,5 +743,19 @@ const styles = {
   poteContainer: { width: '150px', margin: '0 auto', cursor: 'pointer' },
   poteLid: { width: '110px', height: '25px', background: 'rgba(255,255,255,0.5)', margin: '0 auto', borderRadius: '10px 10px 0 0', border: '2px solid rgba(255,255,255,0.6)', borderBottom: 'none' },
   poteBody: { width: '150px', height: '180px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(15px)', borderRadius: '20px', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 20px rgba(255,255,255,0.2), 0 10px 30px rgba(0,0,0,0.1)' },
-  papelMotivo: { background: '#fdfbf7', padding: '25px', borderRadius: '15px', marginTop: '40px', border: '1px solid #e0dcd3', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', maxWidth: '400px', margin: '40px auto 0 auto' }
+  papelMotivo: { background: '#fdfbf7', padding: '25px', borderRadius: '15px', marginTop: '40px', border: '1px solid #e0dcd3', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', maxWidth: '400px', margin: '40px auto 0 auto' },
+  
+  timerContainer: { display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '30px' },
+  timeBox: { background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '15px', padding: '20px', minWidth: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  timeNum: { color: '#ff85a2', fontSize: '2.5rem', fontWeight: 'bold', margin: '0' },
+  timeLabel: { color: '#fff', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '5px' },
+  
+  timeline: { position: 'relative', maxWidth: '600px', margin: '0 auto', padding: '20px 0', textAlign: 'left' },
+  timelineLine: { position: 'absolute', left: '14px', top: '0', bottom: '0', width: '2px', background: 'rgba(255, 133, 162, 0.4)', zIndex: 1 },
+  timelineItem: { display: 'flex', gap: '20px', marginBottom: '40px', position: 'relative', zIndex: 2 },
+  timelineDot: { width: '30px', height: '30px', background: '#ff85a2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(255, 133, 162, 0.8)' },
+  timelineContent: { background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', padding: '20px', borderRadius: '15px', flex: 1 },
+  timelineDate: { color: '#ff85a2', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
+  timelineTitle: { color: '#fff', margin: '5px 0 10px 0', fontSize: '1.2rem' },
+  timelineText: { color: '#ddd', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' },
 };
