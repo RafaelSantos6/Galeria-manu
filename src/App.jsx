@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin } from 'lucide-react';
+import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin, Menu } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 // --- COMPONENTES DO MAPA REAL ---
@@ -33,7 +33,7 @@ import foto16 from './assets/praia.jpg';
 import foto17 from './assets/flores.jpg';
 
 const SPECIAL_MESSAGES = {
-  "Estiver com saudades": "Lembre-se que cada second longe é um segundo mais perto do nosso próximo abraço. Eu te amo!",
+  "Estiver com saudades": "Lembre-se que cada segundo longe é um segundo mais perto do nosso próximo abraço. Eu te amo!",
   "Tiver tido um dia difícil": "Você é a pessoa mais forte que eu conheço. Descanse, amanhã o sol nasce de novo e eu estarei aqui por você.",
   "Estiver feliz": "Sua felicidade é o meu combustível! Guarda esse sorriso em um potinho e me conta tudo depois.",
   "Precisar de um incentivo": "Você é capaz de conquistar o mundo. Eu acredito em você mais do que qualquer pessoa!",
@@ -67,6 +67,7 @@ const NOSSAS_MUSICAS = [
   { id: 5, titulo: 'Gosto mais por sua causa', artista: 'Tek It - Cafuné', foto: foto10, audioUrl: '/Cafuné.mp3' }
 ];
 
+// --- MOTIVOS PARA AMAR ---
 const MOTIVOS = [
   "Amo a sua paixão pela sua profissão de designer.",
   "Amo como a sua criatividade transforma qualquer momento simples em algo especial.",
@@ -87,10 +88,10 @@ const MOTIVOS = [
   "Amo criar memórias ao seu lado, como os nossos dias em parques de diversão.",
   "Amo que o meu lugar favorito no mundo é qualquer lugar, desde que seja com você.",
   "Amo como a gente se completa e faz um time perfeito.",
-  "Amo saber que posso conta com você para absolutamente tudo.",
+  "Amo saber que posso contar com você para absolutamente tudo.",
   "Amo o som da sua risada (é a minha melodia favorita).",
   "Amo o fato de que até o silêncio com você é confortável.",
-  "Amo como você aceita e abraça todas as minhas versões.",
+  "Amo como você aceita e abraça todas as minhas versions.",
   "Amo planejar o futuro com você, sabendo que o caminho vai ser incrível.",
   "Amo as nossas piadas internas que só nós dois entendemos.",
   "Amo como você desperta o meu lado mais poético.",
@@ -243,20 +244,14 @@ const PONTOS_MAPA = [
 
 ];
 
-// Ícone personalizado de coração para o mapa Leaflet
 const heartIcon = new L.DivIcon({
   html: `<div style="color: #ff85a2; filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.4)); animation: pulse 1.5s infinite alternate;"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#ff85a2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div>`,
-  className: 'custom-heart-marker',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32]
+  className: 'custom-heart-marker', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
 });
 
 function ChangeView({ center }) {
   const map = useMap();
-  useEffect(() => {
-    map.setView(center, 14, { animate: true, duration: 1 });
-  }, [center, map]);
+  useEffect(() => { map.setView(center, 14, { animate: true, duration: 1 }); }, [center, map]);
   return null;
 }
 
@@ -268,6 +263,7 @@ export default function App() {
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // NOVO ESTADO: Controla se o menu lateral está aberto
   
   const [mensagemManu, setMensagemManu] = useState('');
   const [imagemManu, setImagemManu] = useState(null);
@@ -363,6 +359,12 @@ export default function App() {
   const currentBg = ['mercado', 'escrever', 'tempo', 'historia', 'mapa'].includes(currentPage)
     ? '#0f1923' : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
 
+  const navigateTo = (page) => {
+    setCurrentPage(page);
+    setActiveMessage(null);
+    setIsSidebarOpen(false); // Fecha o menu lateral automaticamente ao mudar de aba
+  };
+
   if (!isAuthenticated) {
     return (
       <div style={{ ...styles.container, overflow: 'hidden', position: 'relative' }}>
@@ -402,19 +404,48 @@ export default function App() {
 
   return (
     <div style={{ ...styles.container, background: currentBg }}>
+      
+      {/* HEADER COMPACTO DA TRANSICÃO */}
       <header style={styles.header}>
-        <nav style={styles.nav}>
-          <button onClick={() => setCurrentPage('galeria')} style={currentPage === 'galeria' ? styles.navBtnActive : styles.navBtn}><ImageIcon size={16} /> Galeria</button>
-          <button onClick={() => setCurrentPage('mensagens')} style={currentPage === 'mensagens' ? styles.navBtnActive : styles.navBtn}><BookHeart size={16} /> Momentos</button>
-          <button onClick={() => setCurrentPage('escrever')} style={currentPage === 'escrever' ? styles.navBtnActive : styles.navBtn}><PenTool size={16} /> Cartas</button>
-          <button onClick={() => setCurrentPage('motivos')} style={currentPage === 'motivos' ? styles.navBtnActive : styles.navBtn}><Gift size={16} /> Motivos</button>
-          <button onClick={() => setCurrentPage('tempo')} style={currentPage === 'tempo' ? styles.navBtnActive : styles.navBtn}><Clock size={16} /> Tempo</button>
-          <button onClick={() => setCurrentPage('historia')} style={currentPage === 'historia' ? styles.navBtnActive : styles.navBtn}><Star size={16} /> História</button>
-          <button onClick={() => setCurrentPage('mapa')} style={currentPage === 'mapa' ? styles.navBtnActive : styles.navBtn}><MapPin size={16} /> Lugares</button>
-        </nav>
-        {/* CORREÇÃO AQUI: item.id consertado para carregar o Mercado Noturno perfeitamente */}
-        <motion.button whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }} onClick={() => setCurrentPage('mercado')} style={{ ...styles.mercadoIconBtn, background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent' }} title="Acessar Mercado.Noturno"><div style={styles.smallDiamond}></div></motion.button>
+        <button onClick={() => setIsSidebarOpen(true)} style={styles.menuToggleBtn}>
+          <Menu size={24} />
+        </button>
+
+        <motion.button whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }} onClick={() => navigateTo('mercado')} style={{ ...styles.mercadoIconBtn, background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent' }} title="Acessar Mercado.Noturno">
+          <div style={styles.smallDiamond}></div>
+        </motion.button>
       </header>
+
+      {/* --- MENU HAMBURGUER LATERAL (SIDEBAR) ANIMAÇÕES INTEGRADAS --- */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <>
+            {/* Overlay invisível de fundo que fecha ao clicar fora */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
+            
+            {/* Painel do menu lateral */}
+            <motion.nav initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'tween', duration: 0.3 }} style={styles.sidebarNav}>
+              <div style={styles.sidebarHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Heart fill="#ff85a2" color="#ff85a2" size={20} />
+                  <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.1rem' }}>Menu Céu</span>
+                </div>
+                <button onClick={() => setIsSidebarOpen(false)} style={styles.closeMenuBtn}><X size={20} /></button>
+              </div>
+
+              <div style={styles.sidebarMenuGrid}>
+                <button onClick={() => navigateTo('galeria')} style={currentPage === 'galeria' ? styles.sideNavBtnActive : styles.sidebarBtn}><ImageIcon size={18} /> Galeria</button>
+                <button onClick={() => navigateTo('mensagens')} style={currentPage === 'mensagens' ? styles.sideNavBtnActive : styles.sidebarBtn}><BookHeart size={18} /> Momentos</button>
+                <button onClick={() => navigateTo('escrever')} style={currentPage === 'escrever' ? styles.sideNavBtnActive : styles.sidebarBtn}><PenTool size={18} /> Cartas</button>
+                <button onClick={() => navigateTo('motivos')} style={currentPage === 'motivos' ? styles.sideNavBtnActive : styles.sidebarBtn}><Gift size={18} /> Motivos</button>
+                <button onClick={() => navigateTo('tempo')} style={currentPage === 'tempo' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Clock size={18} /> Tempo</button>
+                <button onClick={() => navigateTo('historia')} style={currentPage === 'historia' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Star size={18} /> História</button>
+                <button onClick={() => navigateTo('mapa')} style={currentPage === 'mapa' ? styles.navBtnActiveStyle : styles.sidebarBtn}><MapPin size={18} /> Lugares</button>
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
@@ -429,7 +460,7 @@ export default function App() {
                   </motion.div>
                 ))}
               </motion.div>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCurrentPage('musicas')} style={styles.musicPageBtn}>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigateTo('musicas')} style={styles.musicPageBtn}>
                 <Music size={18} /> Ouvir Nossa Trilha Sonora ❤️
               </motion.button>
             </div>
@@ -479,7 +510,7 @@ export default function App() {
                     </button>
                   </>
                 ) : (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActive}>Enviar outro recado</button></motion.div>
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActiveStyle}>Enviar outro recado</button></motion.div>
                 )}
               </div>
             </motion.div>
@@ -551,7 +582,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* TELA 9: MAPA INTERATIVO CORRIGIDO E INTEGRADO */}
           {currentPage === 'mapa' && (
             <motion.div key="mapa" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.mapPageWrapper}>
               <div style={{ textAlign: 'center' }}>
@@ -560,7 +590,6 @@ export default function App() {
               </div>
 
               <div style={styles.mapLayoutContainer}>
-                {/* LISTA LATERAL */}
                 <div style={styles.mapSidebar}>
                   {PONTOS_MAPA.map((ponto) => (
                     <motion.div 
@@ -579,7 +608,6 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* MAPA REAL */}
                 <div style={styles.mapWrapperBox}>
                   <MapContainer center={mapCenter} zoom={14} style={{ width: '100%', height: '100%' }} zoomControl={true}>
                     <TileLayer
@@ -646,12 +674,21 @@ const styles = {
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
   
-  header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 20px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, pointerEvents: 'none' },
-  nav: { display: 'flex', flexWrap: 'wrap', gap: '6px', padding: '8px', borderRadius: '20px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', pointerEvents: 'auto', maxWidth: 'calc(100% - 60px)', justifyContent: 'center' },
-  navBtn: { padding: '8px 12px', borderRadius: '25px', border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
-  navBtnActive: { padding: '8px 12px', borderRadius: '25px', border: 'none', background: '#fff', color: '#ff85a2', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
+  // --- HEADER COMPACTO PARA RESPONSIVIDADE ---
+  header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 25px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 },
+  menuToggleBtn: { pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
+
+  // --- NOVOS ESTILOS DO MENU HAMBURGUER LATERAL (SIDEBAR) ---
+  sidebarOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 1001, cursor: 'pointer' },
+  sidebarNav: { position: 'fixed', top: 0, left: 0, width: '280px', height: '100vh', background: 'rgba(15, 25, 35, 0.95)', backdropFilter: 'blur(15px)', zIndex: 1002, display: 'flex', flexDirection: 'column', padding: '25px 20px', boxSizing: 'border-box', borderRight: '1px solid rgba(255,255,255,0.1)', boxShadow: '5px 0 30px rgba(0,0,0,0.5)' },
+  sidebarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' },
+  closeMenuBtn: { background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  sidebarMenuGrid: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  sidebarBtn: { width: '100%', padding: '12px 18px', borderRadius: '12px', border: 'none', background: 'transparent', color: '#ccc', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', transition: '0.2s' },
+  sideNavBtnActive: { width: '100%', padding: '12px 18px', borderRadius: '12px', border: 'none', background: '#ff85a2', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', boxShadow: '0 4px 15px rgba(255,133,162,0.4)' },
+  navBtnActiveStyle: { width: '100%', padding: '12px 18px', borderRadius: '12px', border: 'none', background: '#ff85a2', color: '#fff', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', boxShadow: '0 4px 15px rgba(255,133,162,0.4)' },
 
   grid: { display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '100px', maxWidth: '1000px' },
   cardFrame: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.3)', width: '240px', height: '185px', padding: '10px', borderRadius: '20px', cursor: 'pointer' },
