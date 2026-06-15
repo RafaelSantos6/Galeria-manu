@@ -674,13 +674,11 @@ const styles = {
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
   
-  // --- HEADER COMPACTO PARA RESPONSIVIDADE ---
   header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 25px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 },
   menuToggleBtn: { pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
 
-  // --- NOVOS ESTILOS DO MENU HAMBURGUER LATERAL (SIDEBAR) ---
   sidebarOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 1001, cursor: 'pointer' },
   sidebarNav: { position: 'fixed', top: 0, left: 0, width: '280px', height: '100vh', background: 'rgba(15, 25, 35, 0.95)', backdropFilter: 'blur(15px)', zIndex: 1002, display: 'flex', flexDirection: 'column', padding: '25px 20px', boxSizing: 'border-box', borderRight: '1px solid rgba(255,255,255,0.1)', boxShadow: '5px 0 30px rgba(0,0,0,0.5)' },
   sidebarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' },
@@ -740,12 +738,12 @@ const styles = {
   timelineTitle: { color: '#fff', margin: '5px 0 10px 0', fontSize: '1.2rem' },
   timelineText: { color: '#ddd', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' },
   
-  // --- ESTILOS DO CONTEÚDO DO MAPA REAL ---
-  mapPageWrapper: { width: '100%', maxWidth: '1200px', marginTop: '100px', padding: '0 20px', boxSizing: 'border-box' },
-  mapLayoutContainer: { display: 'flex', gap: '20px', height: '550px', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', flexWrap: 'wrap-reverse' },
-  mapSidebar: { width: '300px', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', paddingRight: '5px', flexShrink: 0, height: '100%', boxSizing: 'border-box' },
-  sidebarCard: { padding: '15px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', backdropFilter: 'blur(5px)', transition: '0.2s' },
-  mapWrapperBox: { flex: 2, minWidth: '300px', height: '100%', borderRadius: '15px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 },
+  // --- ESTILOS DO CONTEÚDO DO MAPA REAL CORRIGIDOS PARA MOBILE ---
+  mapPageWrapper: { width: '100%', maxWidth: '1200px', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
+  mapLayoutContainer: { display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', flexDirection: 'column' },
+  mapSidebar: { width: '100%', display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', paddingBottom: '8px', boxSizing: 'border-box', WebkitOverflowScrolling: 'touch' },
+  sidebarCard: { padding: '10px 15px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', backdropFilter: 'blur(5px)', transition: '0.2s', flexShrink: 0, minWidth: '180px' },
+  mapWrapperBox: { width: '100%', height: '350px', borderRadius: '15px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 },
   popupContent: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' },
   popupImage: { width: '100%', height: '120px', objectFit: 'cover', borderRadius: '10px' }
 };
