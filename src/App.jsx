@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin, Menu } from 'lucide-react';
+import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin, Menu, Moon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 // --- COMPONENTES DO MAPA REAL ---
@@ -9,7 +9,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // --- IMPORTAÇÃO DO BANCO DE DADOS ---
-import { db, storage } from './firebase'; 
+import { db, storage } from './firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -182,7 +182,7 @@ const MOTIVOS = [
   "Amo a sensibilidade que você transmite tanto nos seus olhos castanhos quanto nos seus projetos."
 ];
 
-const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00'); 
+const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00');
 
 const NOSSA_HISTORIA = [
   { id: 1, data: 'O Começo', titulo: 'Como tudo começou', descricao: 'O dia em que os nossos caminhos se cruzaram e a minha vida ficou muito mais colorida eu mal conseguia olhar em seus olhos, mas não pude esconder os sentimentos que senti.' },
@@ -199,7 +199,7 @@ const PONTOS_MAPA = [
     id: 1,
     titulo: "Onde tudo começou ❤️",
     subtitulo: "Primeiro Olhar",
-    coords: [-26.360509406851072, -48.8145075853796], 
+    coords: [-26.360509406851072, -48.8145075853796],
     descricao: "Foi aqui, nas ruas dessa cidade, que a nossa história começou a ser escrita. Cada canto daqui me lembra do seu sorriso.",
     foto: foto11
   },
@@ -207,7 +207,7 @@ const PONTOS_MAPA = [
     id: 2,
     titulo: "Nosso Cantinho Favorito 🧺",
     subtitulo: "Refúgio de paz",
-    coords: [-26.29794098630198, -48.883185497933624], 
+    coords: [-26.29794098630198, -48.883185497933624],
     descricao: "O lugar onde as horas parecem minutos e o mundo lá fora simplesmente deixa de importar quando estou com você.",
     foto: foto1
   },
@@ -215,18 +215,20 @@ const PONTOS_MAPA = [
     id: 3,
     titulo: "Aquele Passeio Inesquecível",
     subtitulo: "Praia Sol e Você",
-    coords: [-26.69635115424046, -48.68009224740443], 
+    coords: [-26.69635115424046, -48.68009224740443],
     descricao: "Cada passo ao seu lado aqui me fez ter certeza absoluta de que você é a mulher da minha vida.",
     foto: foto16
   },
-  {id: 4,
+  {
+    id: 4,
     titulo: "Carros e Risadas 🚗",
     subtitulo: "Aventura a dois",
     coords: [-26.23010565233631, -48.82539200773499],
     descricao: "Os momentos de risada e emoção que compartilhamos em nossa jornada juntos.",
     foto: foto12
   },
-  {id: 5,
+  {
+    id: 5,
     titulo: "Preparativos para sua festa",
     subtitulo: "Flores são lindas com você",
     coords: [-26.31794004133291, -48.84267400265913],
@@ -241,7 +243,21 @@ const PONTOS_MAPA = [
     descricao: "Onde pude olhar você dançar e rir, momentos que guardarei para sempre.",
     foto: foto15
   }
+];
 
+// --- CORREÇÃO: COORDENADAS E MENSAGENS DAS ESTRELAS AFASTADAS DAS BORDAS ---
+// --- CONFIGURAÇÃO DA JANELA PARA O CÉU (FORMATO DE CORAÇÃO) ---
+const ESTRELAS_CEU = [
+  { id: 1, top: '22%', left: '35%', titulo: "Brilho ✨", texto: "Admiro a sua luz própria e a sua individualidade, mesmo quando observo de longe." },
+  { id: 2, top: '32%', left: '20%', titulo: "Presença 🤍", texto: "Mesmo nos dias mais silenciosos, o meu carinho por você continua firme e imutável aqui." },
+  { id: 3, top: '50%', left: '22%', titulo: "Calma 🍃", texto: "Não há pressa, não há cobranças. O amor verdadeiro sabe esperar o tempo de cada um." },
+  { id: 4, top: '68%', left: '34%', titulo: "Apoio 🌟", texto: "Estou sempre aqui torcendo por você e por cada conquista sua, com muito orgulho." },
+  { id: 5, top: '82%', left: '50%', titulo: "Abrigo 🏠", texto: "Saiba que o meu abraço e o meu respeito continuam sendo um porto seguro para você." },
+  { id: 6, top: '68%', left: '66%', titulo: "Espaço 🕊️", texto: "Amo a sua independência e respeito profundamente o seu tempo e o seu momento." },
+  { id: 7, top: '50%', left: '78%', titulo: "Cuidado 🌸", texto: "Cuide bem de você e da sua mente. O seu bem-estar é o que mais importa para mim." },
+  { id: 8, top: '32%', left: '80%', titulo: "Constância 🌌", texto: "O meu sentimento por você é como o céu da noite: calmo, imenso e permanente." },
+  { id: 9, top: '22%', left: '65%', titulo: "Leveza 🎈", texto: "Que o seu dia traga paz e respostas leves, exatamente da forma que você precisar." },
+  { id: 10, top: '35%', left: '50%', titulo: "Nós 🔐", texto: "Guardo com infinito carinho e proteção absoluta cada pedacinho da nossa história." }
 ];
 
 const heartIcon = new L.DivIcon({
@@ -263,8 +279,8 @@ export default function App() {
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // NOVO ESTADO: Controla se o menu lateral está aberto
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [mensagemManu, setMensagemManu] = useState('');
   const [imagemManu, setImagemManu] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -273,7 +289,7 @@ export default function App() {
   const [motivoSorteado, setMotivoSorteado] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  
+
   const [mapCenter, setMapCenter] = useState([-26.3045, -48.8464]);
 
   const audioRefs = useRef({});
@@ -329,7 +345,7 @@ export default function App() {
       if (imagemManu) {
         const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
         await uploadBytes(imageRef, imagemManu);
-        imageUrl = await getDownloadURL(imageRef); 
+        imageUrl = await getDownloadURL(imageRef);
       }
       await addDoc(collection(db, "cartas_para_rafael"), { texto: mensagemManu, fotoUrl: imageUrl, data: new Date() });
       setSucesso(true);
@@ -341,7 +357,7 @@ export default function App() {
     NOSSAS_MUSICAS.forEach((track) => {
       const audioElement = audioRefs.current[track.id];
       if (audioElement) {
-        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); } 
+        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); }
         else audioElement.pause();
       }
     });
@@ -356,13 +372,13 @@ export default function App() {
     }, 800);
   };
 
-  const currentBg = ['mercado', 'escrever', 'tempo', 'historia', 'mapa'].includes(currentPage)
+  const currentBg = ['mercado', 'escrever', 'tempo', 'historia', 'mapa', 'ceu'].includes(currentPage)
     ? '#0f1923' : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
 
   const navigateTo = (page) => {
     setCurrentPage(page);
     setActiveMessage(null);
-    setIsSidebarOpen(false); // Fecha o menu lateral automaticamente ao mudar de aba
+    setIsSidebarOpen(false);
   };
 
   if (!isAuthenticated) {
@@ -404,8 +420,7 @@ export default function App() {
 
   return (
     <div style={{ ...styles.container, background: currentBg }}>
-      
-      {/* HEADER COMPACTO DA TRANSICÃO */}
+
       <header style={styles.header}>
         <button onClick={() => setIsSidebarOpen(true)} style={styles.menuToggleBtn}>
           <Menu size={24} />
@@ -416,14 +431,10 @@ export default function App() {
         </motion.button>
       </header>
 
-      {/* --- MENU HAMBURGUER LATERAL (SIDEBAR) ANIMAÇÕES INTEGRADAS --- */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            {/* Overlay invisível de fundo que fecha ao clicar fora */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
-            
-            {/* Painel do menu lateral */}
             <motion.nav initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'tween', duration: 0.3 }} style={styles.sidebarNav}>
               <div style={styles.sidebarHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -441,6 +452,7 @@ export default function App() {
                 <button onClick={() => navigateTo('tempo')} style={currentPage === 'tempo' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Clock size={18} /> Tempo</button>
                 <button onClick={() => navigateTo('historia')} style={currentPage === 'historia' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Star size={18} /> História</button>
                 <button onClick={() => navigateTo('mapa')} style={currentPage === 'mapa' ? styles.navBtnActiveStyle : styles.sidebarBtn}><MapPin size={18} /> Lugares</button>
+                <button onClick={() => navigateTo('ceu')} style={currentPage === 'ceu' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Moon size={18} /> Nosso Céu</button>
               </div>
             </motion.nav>
           </>
@@ -449,7 +461,7 @@ export default function App() {
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
-          
+
           {currentPage === 'galeria' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
               <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
@@ -486,8 +498,8 @@ export default function App() {
                 {MERCADO_ITENS.map((item) => (
                   <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <motion.div ref={el => cardRefs.current[item.id] = el} whileHover={{ scale: 1.02 }} onClick={() => toggleRevelar(item.id)} style={{ ...styles.mercadoCard, borderColor: revelados[item.id] ? item.cor : 'rgba(255,255,255,0.3)', background: revelados[item.id] ? '#1a252e' : 'rgba(0,0,0,0.6)' }}>
-                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) : 
-                      (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
+                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) :
+                        (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
                     </motion.div>
                     {revelados[item.id] && (<button onClick={() => downloadVale(item.id, item.label)} style={styles.downloadBtn}><Download size={16} /> Salvar Vale</button>)}
                   </div>
@@ -506,11 +518,11 @@ export default function App() {
                     <textarea style={styles.textArea} placeholder="Escreva aqui tudo o que você sente..." value={mensagemManu} onChange={(e) => setMensagemManu(e.target.value)} />
                     <label style={styles.uploadBtn}><ImagePlus size={20} />{imagemManu ? imagemManu.name : "Anexar uma foto (Opcional)"}<input type="file" accept="image/*" onChange={(e) => setImagemManu(e.target.files[0])} style={{ display: 'none' }} /></label>
                     <button onClick={enviarParaRafael} disabled={enviando} style={{ ...styles.downloadBtn, width: '100%', opacity: enviando ? 0.5 : 1, marginTop: '10px' }}>
-                      {enviando ? "ENVIANDO..." : <><Send size={16} style={{marginRight: '8px'}}/> ENVIAR PARA O RAFAEL</>}
+                      {enviando ? "ENVIANDO..." : <><Send size={16} style={{ marginRight: '8px' }} /> ENVIAR PARA O RAFAEL</>}
                     </button>
                   </>
                 ) : (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActiveStyle}>Enviar outro recado</button></motion.div>
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => { setSucesso(false); setMensagemManu(''); setImagemManu(null); }} style={styles.navBtnActiveStyle}>Enviar outro recado</button></motion.div>
                 )}
               </div>
             </motion.div>
@@ -537,7 +549,7 @@ export default function App() {
               <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '40px', fontSize: '0.95rem' }}>Clique no pote para descobrir motivos do porquê eu te amo.</p>
               <motion.div onClick={sortearMotivo} animate={isShaking ? { rotate: [-5, 5, -5, 5, 0], scale: 1.05 } : { rotate: 0, scale: 1 }} transition={{ duration: 0.5 }} style={styles.poteContainer}>
                 <div style={styles.poteLid}></div>
-                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{color: '#fff', marginTop: '10px', fontWeight: 'bold'}}>Me aperte</p></div>
+                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{ color: '#fff', marginTop: '10px', fontWeight: 'bold' }}>Me aperte</p></div>
               </motion.div>
               <AnimatePresence>
                 {motivoSorteado && !isShaking && (
@@ -592,12 +604,12 @@ export default function App() {
               <div style={styles.mapLayoutContainer}>
                 <div style={styles.mapSidebar}>
                   {PONTOS_MAPA.map((ponto) => (
-                    <motion.div 
-                      key={ponto.id} 
+                    <motion.div
+                      key={ponto.id}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setMapCenter(ponto.coords)}
-                      style={{ 
-                        ...styles.sidebarCard, 
+                      style={{
+                        ...styles.sidebarCard,
                         border: mapCenter === ponto.coords ? '2px solid #ff85a2' : '1px solid rgba(255,255,255,0.1)',
                         background: mapCenter === ponto.coords ? 'rgba(255,133,162,0.15)' : 'rgba(0,0,0,0.4)'
                       }}
@@ -615,7 +627,7 @@ export default function App() {
                       url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                     />
                     <ChangeView center={mapCenter} />
-                    
+
                     {PONTOS_MAPA.map((ponto) => (
                       <Marker key={ponto.id} position={ponto.coords} icon={heartIcon}>
                         <Popup className="custom-romantic-popup">
@@ -634,6 +646,60 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* TELA 10: JANELA PARA O CÉU */}
+          {currentPage === 'ceu' && (
+            <motion.div key="ceu" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.ceuMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)', lineHeight: '1.2' }}>
+                JANELA PARA O CÉU
+              </h1>
+              <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                RELAXA, RESPIRA E OLHA PARA AS ESTRELAS
+              </p>
+
+              <div style={styles.espacoCeu}>
+                {/* Estrela Cadente Animada */}
+                <motion.div
+                  animate={{ x: ['-10vw', '110vw'], y: ['-10vh', '80vh'], opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 7, ease: "easeOut" }}
+                  style={styles.estrelaCadente}
+                />
+
+                {/* Renderização das Estrelas (Sem os popups internos) */}
+                {ESTRELAS_CEU.map((estrela) => (
+                  <div key={estrela.id} style={{ position: 'absolute', top: estrela.top, left: estrela.left }}>
+                    <motion.div
+                      onClick={() => setActiveMessage(activeMessage === estrela.id ? null : estrela.id)}
+                      animate={{ scale: activeMessage === estrela.id ? [1, 1.5, 1.2] : [1, 1.4, 1], opacity: activeMessage === estrela.id ? 1 : [0.6, 1, 0.6] }}
+                      transition={{ duration: Math.random() * 2 + 2, repeat: activeMessage === estrela.id ? 0 : Infinity, ease: "easeInOut" }}
+                      style={styles.estrelaBrilho}
+                    >
+                      <Star size={16} fill={activeMessage === estrela.id ? "#ff85a2" : "#fff"} color={activeMessage === estrela.id ? "#ff85a2" : "#fff"} />
+                    </motion.div>
+                  </div>
+                ))}
+
+                {/* NOVO CARD FIXO: Fica na base do céu, garantindo leitura perfeita no mobile */}
+                <AnimatePresence>
+                  {activeMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 15 }}
+                      style={styles.popupEstrelaFixo}
+                    >
+                      <h4 style={{ margin: '0 0 5px 0', color: '#ff85a2', fontSize: '1.05rem', fontWeight: 'bold' }}>
+                        {ESTRELAS_CEU.find(e => e.id === activeMessage)?.titulo}
+                      </h4>
+                      <p style={{ margin: 0, color: '#eee', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                        {ESTRELAS_CEU.find(e => e.id === activeMessage)?.texto}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -647,22 +713,11 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <style>{`
-        .custom-romantic-popup .leaflet-popup-content-wrapper {
-          background: rgba(255, 255, 255, 0.95) !important;
-          border-radius: 15px !important;
-          padding: 5px !important;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
-          max-width: 250px !important;
-        }
-        .custom-romantic-popup .leaflet-popup-tip {
-          background: rgba(255, 255, 255, 0.95) !important;
-        }
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          100% { transform: scale(1.15); }
-        }
+        .custom-romantic-popup .leaflet-popup-content-wrapper { background: rgba(255, 255, 255, 0.95) !important; border-radius: 15px !important; padding: 5px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; max-width: 250px !important; }
+        .custom-romantic-popup .leaflet-popup-tip { background: rgba(255, 255, 255, 0.95) !important; }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
       `}</style>
     </div>
   );
@@ -673,7 +728,7 @@ const styles = {
   loginCard: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '40px', borderRadius: '20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.3)' },
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
-  
+
   header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 25px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 },
   menuToggleBtn: { pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
@@ -700,7 +755,7 @@ const styles = {
   modalContent: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative' },
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
   closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
-  
+
   mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '100px', padding: '0 10px', boxSizing: 'border-box' },
   mercadoHeader: { color: '#ff4655', fontSize: 'clamp(1.8rem, 8vw, 3rem)', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)', wordBreak: 'break-word' },
   mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
@@ -737,13 +792,34 @@ const styles = {
   timelineDate: { color: '#ff85a2', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
   timelineTitle: { color: '#fff', margin: '5px 0 10px 0', fontSize: '1.2rem' },
   timelineText: { color: '#ddd', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' },
-  
-  // --- ESTILOS DO CONTEÚDO DO MAPA REAL CORRIGIDOS PARA MOBILE ---
+
   mapPageWrapper: { width: '100%', maxWidth: '1200px', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
   mapLayoutContainer: { display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', flexDirection: 'column' },
   mapSidebar: { width: '100%', display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', paddingBottom: '8px', boxSizing: 'border-box', WebkitOverflowScrolling: 'touch' },
   sidebarCard: { padding: '10px 15px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', backdropFilter: 'blur(5px)', transition: '0.2s', flexShrink: 0, minWidth: '180px' },
   mapWrapperBox: { width: '100%', height: '350px', borderRadius: '15px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative', zIndex: 1 },
   popupContent: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' },
-  popupImage: { width: '100%', height: '120px', objectFit: 'cover', borderRadius: '10px' }
+  popupImage: { width: '100%', height: '120px', objectFit: 'cover', borderRadius: '10px' },
+
+  // Modifique ou adicione estas linhas dentro do seu const styles = { ... }
+  ceuMain: { width: '100%', maxWidth: '800px', textAlign: 'center', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
+  espacoCeu: { width: '100%', height: '500px', background: 'radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)', borderRadius: '20px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' },
+  estrelaBrilho: { cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', filter: 'drop-shadow(0 0 5px #fff)' },
+  estrelaCadente: { position: 'absolute', width: '3px', height: '3px', background: '#fff', borderRadius: '50%', boxShadow: '0 0 10px 2px #fff, 0 0 20px #ff85a2', transform: 'rotate(-45deg)' },
+
+  // NOVA CLASSE DE ESTILO RE-ALINHADA:
+  popupEstrelaFixo: {
+    position: 'absolute',
+    bottom: '15px',
+    left: '15px',
+    right: '15px',
+    background: 'rgba(15, 25, 35, 0.85)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    padding: '15px',
+    borderRadius: '12px',
+    zIndex: 50,
+    textAlign: 'center',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+  },
 };
