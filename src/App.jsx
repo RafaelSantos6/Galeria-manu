@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin, Menu, Moon } from 'lucide-react';
+import { Heart, X, BookHeart, Image as ImageIcon, Download, Send, ImagePlus, PenTool, Music, Gift, Clock, Star, MapPin, Menu, Moon, MessageCircleHeart } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 // --- COMPONENTES DO MAPA REAL ---
@@ -8,9 +8,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// --- IMPORTAÇÃO DO BANCO DE DADOS ---
-import { db, storage } from './firebase';
-import { collection, addDoc } from 'firebase/firestore';
+// --- IMPORTAÇÃO DO BANCO DE DADOS (ATUALIZADO COM onSnapshot) ---
+// Adicionámos o onSnapshot para ler o banco de dados em tempo real e criar a notificação.
+import { db, storage } from './firebase'; 
+import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // --- IMPORTAÇÕES DAS IMAGENS ---
@@ -38,7 +39,7 @@ const SPECIAL_MESSAGES = {
   "Estiver feliz": "Sua felicidade é o meu combustível! Guarda esse sorriso em um potinho e me conta tudo depois.",
   "Precisar de um incentivo": "Você é capaz de conquistar o mundo. Eu acredito em você mais do que qualquer pessoa!",
   "Estiver insegura": "Olhe para tudo o que você já conquistou até aqui. Você é talentosa, inteligente e a designer mais incrível que eu conheço!",
-  "Precisar conversar": "Lembra que eu atravessaria a cidade para te fazer esperimentar um macarrão e ter a pequena chance de ouvir seu coração!",
+  "Precisar conversar": "Lembra que eu atravessaria a cidade para te fazer experimentar um macarrão e ter a pequena chance de ouvir seu coração!",
   "Estiver brava comigo": "Desculpa se eu fiz algo errado, amor. Respire fundo e lembre que meu coração é todo seu, mesmo quando eu sou meio bobo.",
   "Precisar de um abraço": "Imagine que estou te apertando bem forte agora mesmo. Sinta todo o meu carinho chegando aí!"
 };
@@ -67,7 +68,6 @@ const NOSSAS_MUSICAS = [
   { id: 5, titulo: 'Gosto mais por sua causa', artista: 'Tek It - Cafuné', foto: foto10, audioUrl: '/Cafuné.mp3' }
 ];
 
-// --- MOTIVOS PARA AMAR ---
 const MOTIVOS = [
   "Amo a sua paixão pela sua profissão de designer.",
   "Amo como a sua criatividade transforma qualquer momento simples em algo especial.",
@@ -88,101 +88,10 @@ const MOTIVOS = [
   "Amo criar memórias ao seu lado, como os nossos dias em parques de diversão.",
   "Amo que o meu lugar favorito no mundo é qualquer lugar, desde que seja com você.",
   "Amo como a gente se completa e faz um time perfeito.",
-  "Amo saber que posso contar com você para absolutamente tudo.",
-  "Amo o som da sua risada (é a minha melodia favorita).",
-  "Amo o fato de que até o silêncio com você é confortável.",
-  "Amo como você aceita e abraça todas as minhas versions.",
-  "Amo planejar o futuro com você, sabendo que o caminho vai ser incrível.",
-  "Amo as nossas piadas internas que só nós dois entendemos.",
-  "Amo como você desperta o meu lado mais poético.",
-  "Amo que você é a musa inspiradora dos meus melhores pensamentos e poesias.",
-  "Amo como o meu coração acelera (e desacelera) do jeito certo quando te vejo.",
-  "Amo escrever sobre você, porque o amor que sinto transborda em palavras.",
-  "Amo a paz que você me traz em dias cheios de responsabilidades.",
-  "Amo o fato de você ser o meu refúgio seguro depois de um longo dia de trabalho.",
-  "Amo como você me dá forças para enfrentar qualquer desafio na rotina militar.",
-  "Amo o orgulho que sinto no peito toda vez que digo que você é a minha namorada.",
-  "Amo como o seu abraço parece um encaixe perfeito, feito sob medida para mim.",
-  "Amo o fato de você me fazer querer ser a melhor versão de mim mesmo todos os dias.",
-  "Amo como o seu sorriso ilumina qualquer lugar.",
-  "Amo o jeito carinhoso e doce que você cuida de mim.",
-  "Amo o jeito como você me apoia nos meus hobbies e no meu trabalho com tecnologia.",
-  "Amo quando você demonstra que estava pensando em mim do nada.",
-  "Amo o cheiro do seu perfume que fica gravado na minha mente.",
-  "Amo o toque das suas mãos nas minhas.",
-  "Amo a sua voz e como ela me acalma instantaneamente.",
-  "Amo quando você me olha com aquele olharzinho de quem está aprontando algo.",
-  "Amo o seu jeito único de demonstrar afeto.",
-  "Amo receber suas mensagens de carinho no meio do dia.",
-  "Amo como você se importa com o meu bem-estar e com as minhas coisas.",
-  "Amo quando a gente divide fones de ouvido para escutar nossa playlist no Spotify.",
-  "Amo o cuidado que você tem com cada pequeno detalhe da nossa relação.",
-  "Amo o seu abraço apertado, daqueles que parecem colar qualquer pedaço quebrado.",
-  "Amo a leveza que você traz para os meus dias mais pesados.",
-  "Amo a expectativa gostosa de planejar nossa próxima viagem juntos.",
-  "Amo olhar para as nossas fotos e ver o quanto somos felizes juntos.",
-  "Amo pegar a estrada sabendo que o destino final fica ainda melhor com você.",
-  "Amo o seu espírito de companheirismo em cada passeio.",
-  "Amo como até uma voltinha de carro vira um momento especial se você está no carona.",
-  "Amo ver você empolgada conhecendo novos lugares e experiências.",
-  "Amo o fato de que a vida é uma grande aventura ao seu lado.",
-  "Amo quando a gente planeja até os mínimos detalhes dos nossos rolês.",
-  "Amo olhar para trás e ver tudo o que já construímos e vivemos juntos.",
-  "Amo saber que os melhores capítulos da nossa história ainda estão por vir.",
-  "Amo a sua empatia e o seu coração enorme.",
-  "Amo como você me faz sentir amado, valorizado e único.",
-  "Amo o respeito profundo que temos um pelo outro.",
-  "Amo a sua paciência e a sua capacidade incrível de ouvir.",
-  "Amo como você consegue me fazer sorrir mesmo quando estou sério ou cansado.",
-  "Amo o calor do seu abraço nos dias mais frios.",
-  "Amo quando você segura a minha mão bem firme enquanto estamos andando.",
-  "Amo o cafuné que você me dá quando estamos relaxando.",
-  "Amo a segurança e o aconchego que sinto quando estamos juntos.",
-  "Amo o fato de você ser exatamente quem você é, sem tirar nem pôr.",
-  "Amo a sua autenticidade e a sua verdade.",
-  "Amo a sua doçura misturada com a sua força indescritível.",
-  "Amo como você vibra pelas minhas conquistas como se fossem suas.",
-  "Amo saber que nos momentos difíceis nós seguramos a mão um do outro ainda mais forte.",
-  "Amo a leveza do seu riso solto.",
-  "Amo o fato de que você me conhece tão bem, às vezes melhor do que eu mesmo.",
-  "Amo como a gente consegue conversar por horas sem ver o tempo passar.",
-  "Amo o sincronismo perfeito dos nossos pensamentos.",
-  "Amo quando a gente fala a mesma coisa ao mesmo tempo e dá risada.",
-  "Amo o carinho com que você trata as coisas e as pessoas que são importantes para mim.",
-  "Amo como a sua presença transforma qualquer ambiente em um lugar acolhedor.",
-  "Amo a sua determinação e a forma como você corre atrás dos seus sonhos.",
-  "Amo o brilho único que você tem e que ilumina toda a minha vida.",
-  "Amo o jeito como você me desafia de forma positiva a crescer e a evoluir.",
-  "Amo a sensação de paz que dá no peito só de lembrar de você durante o dia.",
-  "Amo que você é a primeira pessoa com quem quero compartilhar qualquer novidade.",
-  "Amo dormir e acordar com a certeza de que tenho você na minha vida.",
-  "Amo o cheiro doce do seu cabelo.",
-  "Amo o quanto o seu beijo ainda faz o meu mundo parar por completo.",
-  "Amo a forma como você se encaixa perfeitamente na minha vida.",
-  "Amo o fato de que o meu amor por você só cresce a cada dia que passa.",
-  "Amo olhar para você e ter a certeza absoluta de que fiz a escolha certa.",
-  "Amo como você faz o conceito de 'para sempre' parecer a coisa mais natural do mundo.",
-  "Amo a nossa história, com cada detalhe, linha e curva que desenhamos juntos.",
-  "Amo a certeza de que, não importa o que aconteça, estaremos do mesmo lado.",
-  "Amo o jeito como você me faz acreditar em finais felizes todos os dias.",
-  "Amo a sua alma, a sua essência e tudo o que te torna única.",
-  "Amo você por inteiro: suas qualidades, suas manias e seu jeito lindo de ser.",
-  "Amo o simples fato de você existir e ter me escolhido.",
-  "Amo você simplesmente por ser você, a minha Manu.",
-  "Amo a profundidade dos seus olhos castanhos, que parecem ler a minha alma.",
-  "Amo como os seus olhos castanhos brilham quando você tem uma ideia nova de design.",
-  "Amo ver o mundo através do seu olhar de designer, cheio de estética e significado.",
-  "Amo a cor dos seus olhos castanhos quando recebem a luz do sol.",
-  "Amo como você consegue expressar sentimentos tão lindos usando apenas o seu talento nos seu design.",
-  "Amo me perder no calor e no mistério dos seus olhos castanhos.",
-  "Amo o orgulho que sinto quando vejo uma arte linda que você criou do zero.",
-  "Amo a harmonia perfeita entre o seu talento para o design e a doçura do seu olhar.",
-  "Amo ver como os seus olhos castanhos ficam expressivos quando você está concentrada criando.",
-  "Amo que o seu lado designer faz você enxergar beleza e potencial até nas coisas mais simples.",
-  "Amo a sensibilidade que você transmite tanto nos seus olhos castanhos quanto nos seus projetos."
+  "Amo saber que posso contar com você para absolutamente tudo."
 ];
 
-const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00');
+const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00'); 
 
 const NOSSA_HISTORIA = [
   { id: 1, data: 'O Começo', titulo: 'Como tudo começou', descricao: 'O dia em que os nossos caminhos se cruzaram e a minha vida ficou muito mais colorida eu mal conseguia olhar em seus olhos, mas não pude esconder os sentimentos que senti.' },
@@ -195,58 +104,14 @@ const NOSSA_HISTORIA = [
 ];
 
 const PONTOS_MAPA = [
-  {
-    id: 1,
-    titulo: "Onde tudo começou ❤️",
-    subtitulo: "Primeiro Olhar",
-    coords: [-26.360509406851072, -48.8145075853796],
-    descricao: "Foi aqui, nas ruas dessa cidade, que a nossa história começou a ser escrita. Cada canto daqui me lembra do seu sorriso.",
-    foto: foto11
-  },
-  {
-    id: 2,
-    titulo: "Nosso Cantinho Favorito 🧺",
-    subtitulo: "Refúgio de paz",
-    coords: [-26.29794098630198, -48.883185497933624],
-    descricao: "O lugar onde as horas parecem minutos e o mundo lá fora simplesmente deixa de importar quando estou com você.",
-    foto: foto1
-  },
-  {
-    id: 3,
-    titulo: "Aquele Passeio Inesquecível",
-    subtitulo: "Praia Sol e Você",
-    coords: [-26.69635115424046, -48.68009224740443],
-    descricao: "Cada passo ao seu lado aqui me fez ter certeza absoluta de que você é a mulher da minha vida.",
-    foto: foto16
-  },
-  {
-    id: 4,
-    titulo: "Carros e Risadas 🚗",
-    subtitulo: "Aventura a dois",
-    coords: [-26.23010565233631, -48.82539200773499],
-    descricao: "Os momentos de risada e emoção que compartilhamos em nossa jornada juntos.",
-    foto: foto12
-  },
-  {
-    id: 5,
-    titulo: "Preparativos para sua festa",
-    subtitulo: "Flores são lindas com você",
-    coords: [-26.31794004133291, -48.84267400265913],
-    descricao: "Os momentos em que o tempo parece parar e a beleza da vida se revela.",
-    foto: foto17
-  },
-  {
-    id: 6,
-    titulo: "Queremos Deus com a gente",
-    subtitulo: "Dança e suas lindas risadas",
-    coords: [-26.34866949412732, -48.82130716958494],
-    descricao: "Onde pude olhar você dançar e rir, momentos que guardarei para sempre.",
-    foto: foto15
-  }
+  { id: 1, titulo: "Onde tudo começou ❤️", subtitulo: "Primeiro Olhar", coords: [-26.360509406851072, -48.8145075853796], descricao: "Foi aqui, nas ruas dessa cidade, que a nossa história começou a ser escrita. Cada canto daqui me lembra do seu sorriso.", foto: foto11 },
+  { id: 2, titulo: "Nosso Cantinho Favorito 🧺", subtitulo: "Refúgio de paz", coords: [-26.29794098630198, -48.883185497933624], descricao: "O lugar onde as horas parecem minutos e o mundo lá fora simplesmente deixa de importar quando estou com você.", foto: foto1 },
+  { id: 3, titulo: "Aquele Passeio Inesquecível", subtitulo: "Praia Sol e Você", coords: [-26.69635115424046, -48.68009224740443], descricao: "Cada passo ao seu lado aqui me fez ter certeza absoluta de que você é a mulher da minha vida.", foto: foto16 },
+  { id: 4, titulo: "Carros e Risadas 🚗", subtitulo: "Aventura a dois", coords: [-26.23010565233631, -48.82539200773499], descricao: "Os momentos de risada e emoção que compartilhamos em nossa jornada juntos.", foto: foto12 },
+  { id: 5, titulo: "Preparativos para sua festa", subtitulo: "Flores são lindas com você", coords: [-26.31794004133291, -48.84267400265913], descricao: "Os momentos em que o tempo parece parar e a beleza da vida se revela.", foto: foto17 },
+  { id: 6, titulo: "Queremos Deus com a gente", subtitulo: "Dança e suas lindas risadas", coords: [-26.34866949412732, -48.82130716958494], descricao: "Onde pude olhar você dançar e rir, momentos que guardarei para sempre.", foto: foto15 }
 ];
 
-// --- CORREÇÃO: COORDENADAS E MENSAGENS DAS ESTRELAS AFASTADAS DAS BORDAS ---
-// --- CONFIGURAÇÃO DA JANELA PARA O CÉU (FORMATO DE CORAÇÃO) ---
 const ESTRELAS_CEU = [
   { id: 1, top: '22%', left: '35%', titulo: "Brilho ✨", texto: "Admiro a sua luz própria e a sua individualidade, mesmo quando observo de longe." },
   { id: 2, top: '32%', left: '20%', titulo: "Presença 🤍", texto: "Mesmo nos dias mais silenciosos, o meu carinho por você continua firme e imutável aqui." },
@@ -279,17 +144,29 @@ export default function App() {
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
+  
+  // --- ESTADOS DA ABA CARTAS ---
+  const [cartasTab, setCartasTab] = useState('escrever'); 
+  const [cartasList, setCartasList] = useState([]);
+  const [carregandoCartas, setCarregandoCartas] = useState(false);
+  
+  // NOVO: Estado para contar as notificações (cartas com respostas não lidas)
+  const [notificacoes, setNotificacoes] = useState(0);
+  
   const [mensagemManu, setMensagemManu] = useState('');
   const [imagemManu, setImagemManu] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+
+  const [respondendoId, setRespondendoId] = useState(null);
+  const [respostaRafa, setRespostaRafa] = useState('');
+
   const [playingAudioId, setPlayingAudioId] = useState(null);
   const [motivoSorteado, setMotivoSorteado] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+  
   const [mapCenter, setMapCenter] = useState([-26.3045, -48.8464]);
 
   const audioRefs = useRef({});
@@ -300,6 +177,62 @@ export default function App() {
       id: i, left: `${Math.random() * 100}%`, delay: Math.random() * 5, duration: Math.random() * 6 + 5, size: Math.random() * 20 + 15
     }))
   ).current;
+
+  // --- O "RADAR" DE NOTIFICAÇÕES (NOVO) ---
+  // Este useEffect escuta o banco de dados em tempo real sempre que a pessoa está logada.
+  useEffect(() => {
+    if (isAuthenticated) {
+      const q = query(collection(db, "cartas_para_rafael"));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        let contagemNaoLidas = 0;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Se a carta tem uma resposta E ainda não foi lida pela Manu, soma 1 à notificação.
+          if (data.resposta && data.lidaPorManu === false) {
+            contagemNaoLidas++;
+          }
+        });
+        setNotificacoes(contagemNaoLidas);
+      });
+      // Limpa o radar se o componente for desmontado
+      return () => unsubscribe();
+    }
+  }, [isAuthenticated]);
+
+  // Busca as cartas no Firebase quando a aba "lidas" é aberta e MARCA COMO LIDAS
+  useEffect(() => {
+    if (cartasTab === 'lidas') {
+      buscarCartasEMarcarLidas();
+    }
+  }, [cartasTab]);
+
+  const buscarCartasEMarcarLidas = async () => {
+    setCarregandoCartas(true);
+    try {
+      const q = query(collection(db, "cartas_para_rafael"), orderBy("data", "desc"));
+      const querySnapshot = await getDocs(q);
+      const cartas = [];
+      
+      querySnapshot.forEach(async (documento) => {
+        const data = documento.data();
+        cartas.push({ id: documento.id, ...data });
+
+        // A MAGIA ACONTECE AQUI: 
+        // Se a carta tem resposta e a Manu ainda não leu (lidaPorManu === false),
+        // como ela acabou de abrir a aba, nós atualizamos no banco para true!
+        // Isso fará a notificação sumir automaticamente.
+        if (data.resposta && data.lidaPorManu === false) {
+          const cartaRef = doc(db, "cartas_para_rafael", documento.id);
+          await updateDoc(cartaRef, { lidaPorManu: true });
+        }
+      });
+      
+      setCartasList(cartas);
+    } catch (erro) {
+      console.error("Erro ao buscar cartas:", erro);
+    }
+    setCarregandoCartas(false);
+  };
 
   useEffect(() => {
     if (currentPage === 'tempo') {
@@ -345,19 +278,54 @@ export default function App() {
       if (imagemManu) {
         const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
         await uploadBytes(imageRef, imagemManu);
-        imageUrl = await getDownloadURL(imageRef);
+        imageUrl = await getDownloadURL(imageRef); 
       }
-      await addDoc(collection(db, "cartas_para_rafael"), { texto: mensagemManu, fotoUrl: imageUrl, data: new Date() });
+      await addDoc(collection(db, "cartas_para_rafael"), { 
+        texto: mensagemManu, 
+        fotoUrl: imageUrl, 
+        data: new Date(),
+        resposta: "",
+        lidaPorManu: true // Quando a Manu envia, não há resposta ainda, logo não há nada por ler.
+      });
       setSucesso(true);
     } catch (erro) { console.error("Erro ao salvar:", erro); alert('Ops! Ocorreu um erro.'); }
     setEnviando(false);
+  };
+
+  const enviarResposta = async (cartaId) => {
+    const senhaAcesso = prompt("Apenas o Rafa tem a chave desse cadeado. Digite a sua senha:");
+    if (senhaAcesso !== "0608") {
+      alert("Senha incorreta! 🔒");
+      return;
+    }
+
+    if (!respostaRafa) {
+      alert('Escreva uma resposta antes de salvar!');
+      return;
+    }
+
+    try {
+      const cartaRef = doc(db, "cartas_para_rafael", cartaId);
+      // ATUALIZADO: Quando o Rafa responde, o sistema marca lidaPorManu como FALSE.
+      // Isto vai disparar a notificação para ela.
+      await updateDoc(cartaRef, {
+        resposta: respostaRafa,
+        lidaPorManu: false 
+      });
+      setRespostaRafa('');
+      setRespondendoId(null);
+      buscarCartasEMarcarLidas(); 
+    } catch (erro) {
+      console.error("Erro ao enviar resposta:", erro);
+      alert("Houve um erro ao tentar salvar a resposta.");
+    }
   };
 
   const handlePlayAudio = (id) => {
     NOSSAS_MUSICAS.forEach((track) => {
       const audioElement = audioRefs.current[track.id];
       if (audioElement) {
-        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); }
+        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); } 
         else audioElement.pause();
       }
     });
@@ -378,7 +346,7 @@ export default function App() {
   const navigateTo = (page) => {
     setCurrentPage(page);
     setActiveMessage(null);
-    setIsSidebarOpen(false);
+    setIsSidebarOpen(false); 
   };
 
   if (!isAuthenticated) {
@@ -420,10 +388,12 @@ export default function App() {
 
   return (
     <div style={{ ...styles.container, background: currentBg }}>
-
+      
       <header style={styles.header}>
         <button onClick={() => setIsSidebarOpen(true)} style={styles.menuToggleBtn}>
           <Menu size={24} />
+          {/* Bolinha vermelha no menu hambúrguer se houver notificação */}
+          {notificacoes > 0 && <span style={styles.badgeNotificacao}>{notificacoes}</span>}
         </button>
 
         <motion.button whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }} onClick={() => navigateTo('mercado')} style={{ ...styles.mercadoIconBtn, background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent' }} title="Acessar Mercado.Noturno">
@@ -447,7 +417,16 @@ export default function App() {
               <div style={styles.sidebarMenuGrid}>
                 <button onClick={() => navigateTo('galeria')} style={currentPage === 'galeria' ? styles.sideNavBtnActive : styles.sidebarBtn}><ImageIcon size={18} /> Galeria</button>
                 <button onClick={() => navigateTo('mensagens')} style={currentPage === 'mensagens' ? styles.sideNavBtnActive : styles.sidebarBtn}><BookHeart size={18} /> Momentos</button>
-                <button onClick={() => navigateTo('escrever')} style={currentPage === 'escrever' ? styles.sideNavBtnActive : styles.sidebarBtn}><PenTool size={18} /> Cartas</button>
+                
+                {/* BOTÃO DE CARTAS COM NOTIFICAÇÃO */}
+                <button onClick={() => navigateTo('escrever')} style={currentPage === 'escrever' ? styles.sideNavBtnActive : styles.sidebarBtn}>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <PenTool size={18} />
+                    {notificacoes > 0 && <span style={styles.badgeNotificacaoSidebar}>{notificacoes}</span>}
+                  </div>
+                  Cartas
+                </button>
+
                 <button onClick={() => navigateTo('motivos')} style={currentPage === 'motivos' ? styles.sideNavBtnActive : styles.sidebarBtn}><Gift size={18} /> Motivos</button>
                 <button onClick={() => navigateTo('tempo')} style={currentPage === 'tempo' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Clock size={18} /> Tempo</button>
                 <button onClick={() => navigateTo('historia')} style={currentPage === 'historia' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Star size={18} /> História</button>
@@ -461,7 +440,7 @@ export default function App() {
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
-
+          
           {currentPage === 'galeria' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
               <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
@@ -498,8 +477,8 @@ export default function App() {
                 {MERCADO_ITENS.map((item) => (
                   <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <motion.div ref={el => cardRefs.current[item.id] = el} whileHover={{ scale: 1.02 }} onClick={() => toggleRevelar(item.id)} style={{ ...styles.mercadoCard, borderColor: revelados[item.id] ? item.cor : 'rgba(255,255,255,0.3)', background: revelados[item.id] ? '#1a252e' : 'rgba(0,0,0,0.6)' }}>
-                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) :
-                        (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
+                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) : 
+                      (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
                     </motion.div>
                     {revelados[item.id] && (<button onClick={() => downloadVale(item.id, item.label)} style={styles.downloadBtn}><Download size={16} /> Salvar Vale</button>)}
                   </div>
@@ -510,21 +489,84 @@ export default function App() {
 
           {currentPage === 'escrever' && (
             <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
-              <h1 style={styles.mercadoHeader}>DEIXE UM RECADO</h1>
-              <p style={{ color: '#fff', marginBottom: '40px', fontFamily: 'monospace' }}>CARTA PARA O RAFA</p>
-              <div style={styles.formContainer}>
-                {!sucesso ? (
-                  <>
-                    <textarea style={styles.textArea} placeholder="Escreva aqui tudo o que você sente..." value={mensagemManu} onChange={(e) => setMensagemManu(e.target.value)} />
-                    <label style={styles.uploadBtn}><ImagePlus size={20} />{imagemManu ? imagemManu.name : "Anexar uma foto (Opcional)"}<input type="file" accept="image/*" onChange={(e) => setImagemManu(e.target.files[0])} style={{ display: 'none' }} /></label>
-                    <button onClick={enviarParaRafael} disabled={enviando} style={{ ...styles.downloadBtn, width: '100%', opacity: enviando ? 0.5 : 1, marginTop: '10px' }}>
-                      {enviando ? "ENVIANDO..." : <><Send size={16} style={{ marginRight: '8px' }} /> ENVIAR PARA O RAFAEL</>}
-                    </button>
-                  </>
-                ) : (
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => { setSucesso(false); setMensagemManu(''); setImagemManu(null); }} style={styles.navBtnActiveStyle}>Enviar outro recado</button></motion.div>
-                )}
+              <h1 style={styles.mercadoHeader}>CAIXA DE CARTAS</h1>
+              <p style={{ color: '#fff', marginBottom: '30px', fontFamily: 'monospace' }}>AMO CADA CARTA QUE RECEBO</p>
+              
+              <div style={styles.cartasTabContainer}>
+                <button onClick={() => setCartasTab('escrever')} style={cartasTab === 'escrever' ? styles.cartasTabBtnActive : styles.cartasTabBtn}>Escrever Novo Recado</button>
+                <button onClick={() => setCartasTab('lidas')} style={cartasTab === 'lidas' ? styles.cartasTabBtnActive : styles.cartasTabBtn}>
+                  Nossas Cartas {notificacoes > 0 && `(${notificacoes})`}
+                </button>
               </div>
+
+              {cartasTab === 'escrever' ? (
+                <div style={styles.formContainer}>
+                  {!sucesso ? (
+                    <>
+                      <textarea style={styles.textArea} placeholder="Escreva aqui tudo o que você sente..." value={mensagemManu} onChange={(e) => setMensagemManu(e.target.value)} />
+                      <label style={styles.uploadBtn}><ImagePlus size={20} />{imagemManu ? imagemManu.name : "Anexar uma foto (Opcional)"}<input type="file" accept="image/*" onChange={(e) => setImagemManu(e.target.files[0])} style={{ display: 'none' }} /></label>
+                      <button onClick={enviarParaRafael} disabled={enviando} style={{ ...styles.downloadBtn, width: '100%', opacity: enviando ? 0.5 : 1, marginTop: '10px' }}>
+                        {enviando ? "ENVIANDO..." : <><Send size={16} style={{marginRight: '8px'}}/> ENVIAR PARA O RAFAEL</>}
+                      </button>
+                    </>
+                  ) : (
+                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActiveStyle}>Escrever mais um</button></motion.div>
+                  )}
+                </div>
+              ) : (
+                <div style={styles.listaCartasContainer}>
+                  {carregandoCartas ? (
+                    <p style={{ color: '#fff' }}>Procurando no coração do banco de dados...</p>
+                  ) : cartasList.length === 0 ? (
+                    <p style={{ color: '#fff' }}>Nenhuma carta foi enviada ainda. Que tal ser a primeira a escrever?</p>
+                  ) : (
+                    cartasList.map((carta) => (
+                      <div key={carta.id} style={styles.cartaItem}>
+                        <span style={styles.cartaData}>
+                          {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') : 'Data desconhecida'}
+                        </span>
+                        
+                        {carta.fotoUrl && (
+                          <img src={carta.fotoUrl} alt="Anexo da carta" style={styles.cartaFotoUrl} />
+                        )}
+                        
+                        <p style={styles.cartaTexto}>{carta.texto}</p>
+
+                        {/* ÁREA DE RESPOSTA DO RAFAEL */}
+                        {carta.resposta ? (
+                          <div style={styles.respostaBox}>
+                            <h4 style={{ color: '#00ff88', margin: '0 0 5px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <MessageCircleHeart size={16} /> Rafa respondeu:
+                            </h4>
+                            <p style={styles.respostaTexto}>{carta.resposta}</p>
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: '15px' }}>
+                            {respondendoId === carta.id ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <textarea 
+                                  style={styles.textAreaResposta} 
+                                  placeholder="Escreva a sua resposta..." 
+                                  value={respostaRafa} 
+                                  onChange={(e) => setRespostaRafa(e.target.value)} 
+                                />
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  <button onClick={() => enviarResposta(carta.id)} style={styles.btnSalvarResposta}>Salvar Resposta</button>
+                                  <button onClick={() => setRespondendoId(null)} style={styles.btnCancelarResposta}>Cancelar</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button onClick={() => setRespondendoId(carta.id)} style={styles.btnResponderRafa}>
+                                <PenTool size={14} /> Responder (Apenas Rafa)
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -549,7 +591,7 @@ export default function App() {
               <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '40px', fontSize: '0.95rem' }}>Clique no pote para descobrir motivos do porquê eu te amo.</p>
               <motion.div onClick={sortearMotivo} animate={isShaking ? { rotate: [-5, 5, -5, 5, 0], scale: 1.05 } : { rotate: 0, scale: 1 }} transition={{ duration: 0.5 }} style={styles.poteContainer}>
                 <div style={styles.poteLid}></div>
-                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{ color: '#fff', marginTop: '10px', fontWeight: 'bold' }}>Me aperte</p></div>
+                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{color: '#fff', marginTop: '10px', fontWeight: 'bold'}}>Me aperte</p></div>
               </motion.div>
               <AnimatePresence>
                 {motivoSorteado && !isShaking && (
@@ -604,12 +646,12 @@ export default function App() {
               <div style={styles.mapLayoutContainer}>
                 <div style={styles.mapSidebar}>
                   {PONTOS_MAPA.map((ponto) => (
-                    <motion.div
-                      key={ponto.id}
+                    <motion.div 
+                      key={ponto.id} 
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setMapCenter(ponto.coords)}
-                      style={{
-                        ...styles.sidebarCard,
+                      style={{ 
+                        ...styles.sidebarCard, 
                         border: mapCenter === ponto.coords ? '2px solid #ff85a2' : '1px solid rgba(255,255,255,0.1)',
                         background: mapCenter === ponto.coords ? 'rgba(255,133,162,0.15)' : 'rgba(0,0,0,0.4)'
                       }}
@@ -627,7 +669,7 @@ export default function App() {
                       url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                     />
                     <ChangeView center={mapCenter} />
-
+                    
                     {PONTOS_MAPA.map((ponto) => (
                       <Marker key={ponto.id} position={ponto.coords} icon={heartIcon}>
                         <Popup className="custom-romantic-popup">
@@ -646,7 +688,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* TELA 10: JANELA PARA O CÉU */}
           {currentPage === 'ceu' && (
             <motion.div key="ceu" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.ceuMain}>
               <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)', lineHeight: '1.2' }}>
@@ -655,16 +696,14 @@ export default function App() {
               <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
                 RELAXA, RESPIRA E OLHA PARA AS ESTRELAS
               </p>
-
+              
               <div style={styles.espacoCeu}>
-                {/* Estrela Cadente Animada */}
                 <motion.div
                   animate={{ x: ['-10vw', '110vw'], y: ['-10vh', '80vh'], opacity: [0, 1, 1, 0] }}
                   transition={{ duration: 3, repeat: Infinity, repeatDelay: 7, ease: "easeOut" }}
                   style={styles.estrelaCadente}
                 />
 
-                {/* Renderização das Estrelas (Sem os popups internos) */}
                 {ESTRELAS_CEU.map((estrela) => (
                   <div key={estrela.id} style={{ position: 'absolute', top: estrela.top, left: estrela.left }}>
                     <motion.div
@@ -678,13 +717,12 @@ export default function App() {
                   </div>
                 ))}
 
-                {/* NOVO CARD FIXO: Fica na base do céu, garantindo leitura perfeita no mobile */}
                 <AnimatePresence>
                   {activeMessage && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 15 }}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      exit={{ opacity: 0, y: 15 }} 
                       style={styles.popupEstrelaFixo}
                     >
                       <h4 style={{ margin: '0 0 5px 0', color: '#ff85a2', fontSize: '1.05rem', fontWeight: 'bold' }}>
@@ -713,7 +751,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       <style>{`
         .custom-romantic-popup .leaflet-popup-content-wrapper { background: rgba(255, 255, 255, 0.95) !important; border-radius: 15px !important; padding: 5px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; max-width: 250px !important; }
         .custom-romantic-popup .leaflet-popup-tip { background: rgba(255, 255, 255, 0.95) !important; }
@@ -728,11 +766,15 @@ const styles = {
   loginCard: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '40px', borderRadius: '20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.3)' },
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
-
+  
   header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 25px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 },
-  menuToggleBtn: { pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
+  menuToggleBtn: { position: 'relative', pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
+
+  // --- ESTILOS DA NOTIFICAÇÃO (BOLINHA VERMELHA) ---
+  badgeNotificacao: { position: 'absolute', top: '-6px', right: '-6px', background: '#ff4655', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 0 10px rgba(255,70,85,0.8)' },
+  badgeNotificacaoSidebar: { position: 'absolute', top: '-5px', right: '-8px', background: '#ff4655', color: '#fff', fontSize: '0.65rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '10px', boxShadow: '0 0 10px rgba(255,70,85,0.6)' },
 
   sidebarOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 1001, cursor: 'pointer' },
   sidebarNav: { position: 'fixed', top: 0, left: 0, width: '280px', height: '100vh', background: 'rgba(15, 25, 35, 0.95)', backdropFilter: 'blur(15px)', zIndex: 1002, display: 'flex', flexDirection: 'column', padding: '25px 20px', boxSizing: 'border-box', borderRight: '1px solid rgba(255,255,255,0.1)', boxShadow: '5px 0 30px rgba(0,0,0,0.5)' },
@@ -755,7 +797,7 @@ const styles = {
   modalContent: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative' },
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
   closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
-
+  
   mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '100px', padding: '0 10px', boxSizing: 'border-box' },
   mercadoHeader: { color: '#ff4655', fontSize: 'clamp(1.8rem, 8vw, 3rem)', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)', wordBreak: 'break-word' },
   mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
@@ -767,9 +809,28 @@ const styles = {
   mercadoLabel: { color: '#fff', fontSize: '1.2rem', margin: '20px 0', textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.8)' },
   glowEffect: { position: 'absolute', bottom: '-20px', left: '-20px', right: '-20px', height: '60px', filter: 'blur(40px)', opacity: 0.4, zIndex: 1 },
   downloadBtn: { background: '#00ff88', border: 'none', color: '#000', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0, 255, 136, 0.2)' },
+  
+  cartasTabContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' },
+  cartasTabBtn: { background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' },
+  cartasTabBtnActive: { background: '#ff4655', color: '#fff', border: '1px solid #ff4655', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px rgba(255,70,85,0.4)' },
+  
   formContainer: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '15px', padding: '30px', maxWidth: '500px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px', boxSizing: 'border-box' },
   textArea: { width: '100%', height: '150px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: '#fff', padding: '15px', fontSize: '1rem', fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' },
   uploadBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px dashed #ff4655', color: '#ff4655', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' },
+  
+  listaCartasContainer: { display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px', width: '100%', margin: '0 auto' },
+  cartaItem: { background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px' },
+  cartaData: { color: '#ff85a2', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
+  cartaTexto: { color: '#fff', fontSize: '1rem', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' },
+  cartaFotoUrl: { width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' },
+  
+  respostaBox: { background: 'rgba(0,255,136,0.1)', borderLeft: '4px solid #00ff88', padding: '15px', borderRadius: '0 8px 8px 0', marginTop: '10px' },
+  respostaTexto: { color: '#fff', fontSize: '0.95rem', fontStyle: 'italic', margin: 0, lineHeight: '1.5', whiteSpace: 'pre-wrap' },
+  btnResponderRafa: { background: 'transparent', border: '1px solid #ff85a2', color: '#ff85a2', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
+  textAreaResposta: { width: '100%', height: '80px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid #ff85a2', borderRadius: '8px', color: '#fff', padding: '10px', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'none', outline: 'none' },
+  btnSalvarResposta: { background: '#ff85a2', border: 'none', color: '#fff', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
+  btnCancelarResposta: { background: 'transparent', border: '1px solid #ccc', color: '#ccc', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
+
   musicPageBtn: { background: '#fff', color: '#ff85a2', border: 'none', padding: '12px 25px', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginTop: '35px' },
   musicGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', padding: '10px', width: '100%', maxWidth: '900px', margin: '0 auto' },
   musicCard: { display: 'flex', background: 'rgba(0, 0, 0, 0.67)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '16px', padding: '15px', alignItems: 'center', gap: '15px', textAlign: 'left', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' },
@@ -792,7 +853,7 @@ const styles = {
   timelineDate: { color: '#ff85a2', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
   timelineTitle: { color: '#fff', margin: '5px 0 10px 0', fontSize: '1.2rem' },
   timelineText: { color: '#ddd', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' },
-
+  
   mapPageWrapper: { width: '100%', maxWidth: '1200px', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
   mapLayoutContainer: { display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', flexDirection: 'column' },
   mapSidebar: { width: '100%', display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', paddingBottom: '8px', boxSizing: 'border-box', WebkitOverflowScrolling: 'touch' },
@@ -801,25 +862,9 @@ const styles = {
   popupContent: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' },
   popupImage: { width: '100%', height: '120px', objectFit: 'cover', borderRadius: '10px' },
 
-  // Modifique ou adicione estas linhas dentro do seu const styles = { ... }
   ceuMain: { width: '100%', maxWidth: '800px', textAlign: 'center', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
   espacoCeu: { width: '100%', height: '500px', background: 'radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)', borderRadius: '20px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' },
   estrelaBrilho: { cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', filter: 'drop-shadow(0 0 5px #fff)' },
   estrelaCadente: { position: 'absolute', width: '3px', height: '3px', background: '#fff', borderRadius: '50%', boxShadow: '0 0 10px 2px #fff, 0 0 20px #ff85a2', transform: 'rotate(-45deg)' },
-
-  // NOVA CLASSE DE ESTILO RE-ALINHADA:
-  popupEstrelaFixo: {
-    position: 'absolute',
-    bottom: '15px',
-    left: '15px',
-    right: '15px',
-    background: 'rgba(15, 25, 35, 0.85)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    padding: '15px',
-    borderRadius: '12px',
-    zIndex: 50,
-    textAlign: 'center',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
-  },
+  popupEstrelaFixo: { position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(15, 25, 35, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '15px', borderRadius: '12px', zIndex: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)' }
 };
