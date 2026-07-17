@@ -8,8 +8,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// --- IMPORTAÇÃO DO BANCO DE DADOS (ATUALIZADO COM onSnapshot) ---
-// Adicionámos o onSnapshot para ler o banco de dados em tempo real e criar a notificação.
+// --- IMPORTAÇÃO DO BANCO DE DADOS ---
 import { db, storage } from './firebase'; 
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -150,10 +149,15 @@ export default function App() {
   const [cartasTab, setCartasTab] = useState('escrever'); 
   const [cartasList, setCartasList] = useState([]);
   const [carregandoCartas, setCarregandoCartas] = useState(false);
-  
-  // NOVO: Estado para contar as notificações (cartas com respostas não lidas)
   const [notificacoes, setNotificacoes] = useState(0);
   
+  // --- ESTADOS DO DIÁRIO DE UMA PAIXÃO ---
+  const [diarioList, setDiarioList] = useState([]);
+  const [textoDiario, setTextoDiario] = useState('');
+  const [dataDesbloqueio, setDataDesbloqueio] = useState('');
+  const [isRafaWriter, setIsRafaWriter] = useState(false);
+  const [cartaDiarioAtiva, setCartaDiarioAtiva] = useState(null);
+
   const [mensagemManu, setMensagemManu] = useState('');
   const [imagemManu, setImagemManu] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -178,8 +182,7 @@ export default function App() {
     }))
   ).current;
 
-  // --- O "RADAR" DE NOTIFICAÇÕES (NOVO) ---
-  // Este useEffect escuta o banco de dados em tempo real sempre que a pessoa está logada.
+  // --- O RADAR DE NOTIFICAÇÕES ---
   useEffect(() => {
     if (isAuthenticated) {
       const q = query(collection(db, "cartas_para_rafael"));
@@ -187,46 +190,32 @@ export default function App() {
         let contagemNaoLidas = 0;
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // Se a carta tem uma resposta E ainda não foi lida pela Manu, soma 1 à notificação.
           if (data.resposta && data.lidaPorManu === false) {
             contagemNaoLidas++;
           }
         });
         setNotificacoes(contagemNaoLidas);
       });
-      // Limpa o radar se o componente for desmontado
       return () => unsubscribe();
     }
   }, [isAuthenticated]);
 
-  // Busca as cartas no Firebase quando a aba "lidas" é aberta e MARCA COMO LIDAS
+  // --- FUNÇÕES DA CAIXA DE CARTAS ---
   useEffect(() => {
     if (cartasTab === 'lidas') {
-      buscarCartasEMarcarLidas();
+      buscarCartas();
     }
   }, [cartasTab]);
 
-  const buscarCartasEMarcarLidas = async () => {
+  const buscarCartas = async () => {
     setCarregandoCartas(true);
     try {
       const q = query(collection(db, "cartas_para_rafael"), orderBy("data", "desc"));
       const querySnapshot = await getDocs(q);
       const cartas = [];
-      
-      querySnapshot.forEach(async (documento) => {
-        const data = documento.data();
-        cartas.push({ id: documento.id, ...data });
-
-        // A MAGIA ACONTECE AQUI: 
-        // Se a carta tem resposta e a Manu ainda não leu (lidaPorManu === false),
-        // como ela acabou de abrir a aba, nós atualizamos no banco para true!
-        // Isso fará a notificação sumir automaticamente.
-        if (data.resposta && data.lidaPorManu === false) {
-          const cartaRef = doc(db, "cartas_para_rafael", documento.id);
-          await updateDoc(cartaRef, { lidaPorManu: true });
-        }
+      querySnapshot.forEach((documento) => {
+        cartas.push({ id: documento.id, ...documento.data() });
       });
-      
       setCartasList(cartas);
     } catch (erro) {
       console.error("Erro ao buscar cartas:", erro);
@@ -234,6 +223,124 @@ export default function App() {
     setCarregandoCartas(false);
   };
 
+  const marcarComoLida = async (cartaId) => {
+    try {
+      const cartaRef = doc(db, "cartas_para_rafael", cartaId);
+      await updateDoc(cartaRef, { lidaPorManu: true });
+      buscarCartas();
+    } catch (erro) {
+      console.error("Erro ao marcar como lida:", erro);
+    }
+  };
+
+  const enviarParaRafael = async () => {
+    if (!mensagemManu && !imagemManu) { alert('Escreva algo ou adicione uma foto! Irei ver tudo com muito carinho ❤️'); return; }
+    setEnviando(true);
+    try {
+      let imageUrl = "";
+      if (imagemManu) {
+        const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
+        await uploadBytes(imageRef, imagemManu);
+        imageUrl = await getDownloadURL(imageRef); 
+      }
+      await addDoc(collection(db, "cartas_para_rafael"), { 
+        texto: mensagemManu, 
+        fotoUrl: imageUrl, 
+        data: new Date(),
+        resposta: "",
+        lidaPorManu: true
+      });
+      setSucesso(true);
+    } catch (erro) { console.error("Erro ao salvar:", erro); alert('Ops! Ocorreu um erro.'); }
+    setEnviando(false);
+  };
+
+  const enviarResposta = async (cartaId) => {
+    const senhaAcesso = prompt("Apenas o Rafa tem a chave desse cadeado. Digite a sua senha:");
+    if (senhaAcesso !== "0608") {
+      alert("Senha incorreta! 🔒");
+      return;
+    }
+    if (!respostaRafa) {
+      alert('Escreva uma resposta antes de salvar!');
+      return;
+    }
+    try {
+      const cartaRef = doc(db, "cartas_para_rafael", cartaId);
+      await updateDoc(cartaRef, {
+        resposta: respostaRafa,
+        lidaPorManu: false 
+      });
+      setRespostaRafa('');
+      setRespondendoId(null);
+      buscarCartas(); 
+    } catch (erro) {
+      console.error("Erro ao enviar resposta:", erro);
+      alert("Houve um erro ao tentar salvar a resposta.");
+    }
+  };
+
+  // --- FUNÇÕES DO DIÁRIO DE UMA PAIXÃO ---
+  const buscarDiario = async () => {
+    try {
+      const q = query(collection(db, "diario_de_uma_paixao"), orderBy("dataDesbloqueio", "desc"));
+      const querySnapshot = await getDocs(q);
+      const cartas = [];
+      querySnapshot.forEach((doc) => {
+        cartas.push({ id: doc.id, ...doc.data() });
+      });
+      setDiarioList(cartas);
+    } catch (erro) {
+      console.error("Erro ao buscar diário:", erro);
+    }
+  };
+
+  useEffect(() => {
+    if (currentPage === 'diario') buscarDiario();
+  }, [currentPage]);
+
+  const abrirFormularioRafa = () => {
+    const senha = prompt("Cadeado do autor. Qual a senha, Rafa?");
+    if (senha === "0608") setIsRafaWriter(true);
+    else alert("Senha incorreta!");
+  };
+
+  const salvarCartaDiario = async () => {
+    if (!textoDiario || !dataDesbloqueio) return alert("Preencha a data e o texto!");
+    try {
+      await addDoc(collection(db, "diario_de_uma_paixao"), {
+        texto: textoDiario,
+        dataDesbloqueio: dataDesbloqueio,
+        lidaPorManu: false,
+        dataCriacao: new Date()
+      });
+      alert("Carta eternizada com sucesso!");
+      setTextoDiario('');
+      setDataDesbloqueio('');
+      buscarDiario(); 
+    } catch (erro) {
+      console.error("Erro ao salvar diário:", erro);
+    }
+  };
+
+  const lerCartaDiario = async (carta) => {
+    const hoje = new Date().toISOString().split('T')[0]; 
+    if (carta.dataDesbloqueio > hoje) {
+      return alert("Calma, apressadinha! O tempo dessa carta ainda não chegou. ❤️");
+    }
+    setCartaDiarioAtiva(carta); 
+    if (carta.lidaPorManu === false) {
+      try {
+        const cartaRef = doc(db, "diario_de_uma_paixao", carta.id);
+        await updateDoc(cartaRef, { lidaPorManu: true });
+        buscarDiario(); 
+      } catch (erro) {
+        console.error("Erro ao registrar leitura:", erro);
+      }
+    }
+  };
+
+  // --- OUTRAS FUNÇÕES ---
   useEffect(() => {
     if (currentPage === 'tempo') {
       const interval = setInterval(() => {
@@ -270,57 +377,6 @@ export default function App() {
     }
   };
 
-  const enviarParaRafael = async () => {
-    if (!mensagemManu && !imagemManu) { alert('Escreva algo ou adicione uma foto! Irei ver tudo com muito carinho ❤️'); return; }
-    setEnviando(true);
-    try {
-      let imageUrl = "";
-      if (imagemManu) {
-        const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
-        await uploadBytes(imageRef, imagemManu);
-        imageUrl = await getDownloadURL(imageRef); 
-      }
-      await addDoc(collection(db, "cartas_para_rafael"), { 
-        texto: mensagemManu, 
-        fotoUrl: imageUrl, 
-        data: new Date(),
-        resposta: "",
-        lidaPorManu: true // Quando a Manu envia, não há resposta ainda, logo não há nada por ler.
-      });
-      setSucesso(true);
-    } catch (erro) { console.error("Erro ao salvar:", erro); alert('Ops! Ocorreu um erro.'); }
-    setEnviando(false);
-  };
-
-  const enviarResposta = async (cartaId) => {
-    const senhaAcesso = prompt("Apenas o Rafa tem a chave desse cadeado. Digite a sua senha:");
-    if (senhaAcesso !== "0608") {
-      alert("Senha incorreta! 🔒");
-      return;
-    }
-
-    if (!respostaRafa) {
-      alert('Escreva uma resposta antes de salvar!');
-      return;
-    }
-
-    try {
-      const cartaRef = doc(db, "cartas_para_rafael", cartaId);
-      // ATUALIZADO: Quando o Rafa responde, o sistema marca lidaPorManu como FALSE.
-      // Isto vai disparar a notificação para ela.
-      await updateDoc(cartaRef, {
-        resposta: respostaRafa,
-        lidaPorManu: false 
-      });
-      setRespostaRafa('');
-      setRespondendoId(null);
-      buscarCartasEMarcarLidas(); 
-    } catch (erro) {
-      console.error("Erro ao enviar resposta:", erro);
-      alert("Houve um erro ao tentar salvar a resposta.");
-    }
-  };
-
   const handlePlayAudio = (id) => {
     NOSSAS_MUSICAS.forEach((track) => {
       const audioElement = audioRefs.current[track.id];
@@ -340,7 +396,7 @@ export default function App() {
     }, 800);
   };
 
-  const currentBg = ['mercado', 'escrever', 'tempo', 'historia', 'mapa', 'ceu'].includes(currentPage)
+  const currentBg = ['mercado', 'escrever', 'tempo', 'historia', 'mapa', 'ceu', 'diario'].includes(currentPage)
     ? '#0f1923' : 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)';
 
   const navigateTo = (page) => {
@@ -392,7 +448,6 @@ export default function App() {
       <header style={styles.header}>
         <button onClick={() => setIsSidebarOpen(true)} style={styles.menuToggleBtn}>
           <Menu size={24} />
-          {/* Bolinha vermelha no menu hambúrguer se houver notificação */}
           {notificacoes > 0 && <span style={styles.badgeNotificacao}>{notificacoes}</span>}
         </button>
 
@@ -418,7 +473,6 @@ export default function App() {
                 <button onClick={() => navigateTo('galeria')} style={currentPage === 'galeria' ? styles.sideNavBtnActive : styles.sidebarBtn}><ImageIcon size={18} /> Galeria</button>
                 <button onClick={() => navigateTo('mensagens')} style={currentPage === 'mensagens' ? styles.sideNavBtnActive : styles.sidebarBtn}><BookHeart size={18} /> Momentos</button>
                 
-                {/* BOTÃO DE CARTAS COM NOTIFICAÇÃO */}
                 <button onClick={() => navigateTo('escrever')} style={currentPage === 'escrever' ? styles.sideNavBtnActive : styles.sidebarBtn}>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <PenTool size={18} />
@@ -432,6 +486,7 @@ export default function App() {
                 <button onClick={() => navigateTo('historia')} style={currentPage === 'historia' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Star size={18} /> História</button>
                 <button onClick={() => navigateTo('mapa')} style={currentPage === 'mapa' ? styles.navBtnActiveStyle : styles.sidebarBtn}><MapPin size={18} /> Lugares</button>
                 <button onClick={() => navigateTo('ceu')} style={currentPage === 'ceu' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Moon size={18} /> Nosso Céu</button>
+                <button onClick={() => navigateTo('diario')} style={currentPage === 'diario' ? styles.navBtnActiveStyle : styles.sidebarBtn}><BookHeart size={18} /> O Diário</button>
               </div>
             </motion.nav>
           </>
@@ -490,7 +545,7 @@ export default function App() {
           {currentPage === 'escrever' && (
             <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>CAIXA DE CARTAS</h1>
-              <p style={{ color: '#fff', marginBottom: '30px', fontFamily: 'monospace' }}>AMO CADA CARTA QUE RECEBO</p>
+              <p style={{ color: '#fff', marginBottom: '30px', fontFamily: 'monospace' }}>NOSSO ESPAÇO DE MENSAGENS</p>
               
               <div style={styles.cartasTabContainer}>
                 <button onClick={() => setCartasTab('escrever')} style={cartasTab === 'escrever' ? styles.cartasTabBtnActive : styles.cartasTabBtn}>Escrever Novo Recado</button>
@@ -532,13 +587,18 @@ export default function App() {
                         
                         <p style={styles.cartaTexto}>{carta.texto}</p>
 
-                        {/* ÁREA DE RESPOSTA DO RAFAEL */}
                         {carta.resposta ? (
                           <div style={styles.respostaBox}>
                             <h4 style={{ color: '#00ff88', margin: '0 0 5px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
                               <MessageCircleHeart size={16} /> Rafa respondeu:
                             </h4>
                             <p style={styles.respostaTexto}>{carta.resposta}</p>
+                            
+                            {carta.lidaPorManu === false && (
+                              <button onClick={() => marcarComoLida(carta.id)} style={styles.btnMarcarLida}>
+                                <Heart size={14} fill="#ff85a2" color="#ff85a2" /> Marcar como lida
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div style={{ marginTop: '15px' }}>
@@ -738,6 +798,82 @@ export default function App() {
             </motion.div>
           )}
 
+          {currentPage === 'diario' && (
+            <motion.div key="diario" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.mercadoMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#fff', textShadow: '2px 2px 10px rgba(255,133,162,0.3)', lineHeight: '1.2' }}>
+                DIÁRIO
+              </h1>
+              <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
+               MEUS 365 DIAS DE AMOR. UMA CARTA DE CADA VEZ.
+              </p>
+
+              {!isRafaWriter ? (
+                <button onClick={abrirFormularioRafa} style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.5)', padding: '5px 15px', borderRadius: '10px', fontSize: '0.7rem', marginBottom: '20px', cursor: 'pointer' }}>
+                  Acesso Restrito (Autor)
+                </button>
+              ) : (
+                <div style={{ ...styles.formContainer, marginBottom: '30px', border: '1px solid #00ff88' }}>
+                  <h3 style={{ color: '#00ff88', margin: '0 0 10px 0' }}>Escrever nova página</h3>
+                  <input 
+                    type="date" 
+                    value={dataDesbloqueio} 
+                    onChange={(e) => setDataDesbloqueio(e.target.value)}
+                    style={{ padding: '10px', borderRadius: '8px', border: 'none', marginBottom: '10px' }}
+                  />
+                  <textarea 
+                    style={styles.textArea} 
+                    placeholder="Escreva a carta que ela lerá no dia escolhido acima..." 
+                    value={textoDiario} 
+                    onChange={(e) => setTextoDiario(e.target.value)} 
+                  />
+                  <button onClick={salvarCartaDiario} style={{ ...styles.btnSalvarResposta, background: '#00ff88', color: '#000', marginTop: '10px' }}>Eternizar Carta</button>
+                </div>
+              )}
+
+              <div style={styles.diarioGrid}>
+                {diarioList.map(carta => {
+                  const hoje = new Date().toISOString().split('T')[0];
+                  const estaTrancada = carta.dataDesbloqueio > hoje;
+                  const [ano, mes, dia] = carta.dataDesbloqueio.split('-');
+                  const dataVisual = `${dia}/${mes}/${ano}`;
+
+                  return (
+                    <motion.div 
+                      key={carta.id}
+                      whileHover={{ scale: estaTrancada ? 1 : 1.05 }}
+                      onClick={() => lerCartaDiario(carta)}
+                      style={{
+                        ...styles.diarioCard,
+                        background: estaTrancada ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.1)',
+                        borderColor: estaTrancada ? 'rgba(255,255,255,0.1)' : '#ff85a2',
+                        cursor: estaTrancada ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <h3 style={{ color: '#fff', margin: '0 0 10px 0', fontSize: '1.2rem' }}>{dataVisual}</h3>
+                      {estaTrancada ? (
+                        <div style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '2rem' }}>🔒</span>
+                          <p style={{ margin: 0, fontSize: '0.8rem' }}>No tempo certo...</p>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#ff85a2', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '2rem' }}>💌</span>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#fff' }}>Clique para ler</p>
+                        </div>
+                      )}
+                      
+                      {isRafaWriter && !estaTrancada && (
+                        <p style={{ fontSize: '0.7rem', color: carta.lidaPorManu ? '#00ff88' : '#ffb000', margin: '15px 0 0 0', fontWeight: 'bold' }}>
+                          {carta.lidaPorManu ? '👀 Ela já leu' : '⏳ Ainda não leu'}
+                        </p>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
@@ -747,6 +883,25 @@ export default function App() {
             <motion.div layoutId={selectedId} style={styles.modalContent} transition={{ type: "spring", stiffness: 250, damping: 30 }}>
               <button style={styles.closeBtn} onClick={(e) => { e.stopPropagation(); setSelectedId(null); }}><X /></button>
               <img src={MEMORIES.find(m => m.id === selectedId).url} style={styles.modalImgFit} alt="Zoom" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cartaDiarioAtiva && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.overlay} onClick={() => setCartaDiarioAtiva(null)}>
+            <motion.div style={{ ...styles.modalContent, maxWidth: '500px', width: '90%', padding: '30px', background: '#fdfbf7' }} onClick={(e) => e.stopPropagation()} transition={{ type: "spring", stiffness: 250, damping: 30 }}>
+              <button style={{...styles.closeBtn, color: '#333'}} onClick={() => setCartaDiarioAtiva(null)}><X /></button>
+              <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center' }}>
+                Carta de {cartaDiarioAtiva.dataDesbloqueio.split('-').reverse().join('/')}
+              </h2>
+              <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap' }}>
+                {cartaDiarioAtiva.texto}
+              </p>
+              <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                <Heart size={24} fill="#ff85a2" color="#ff85a2" />
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -772,7 +927,6 @@ const styles = {
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
   smallDiamond: { width: '10px', height: '10px', background: '#ff4655', transform: 'rotate(45deg)' },
 
-  // --- ESTILOS DA NOTIFICAÇÃO (BOLINHA VERMELHA) ---
   badgeNotificacao: { position: 'absolute', top: '-6px', right: '-6px', background: '#ff4655', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 0 10px rgba(255,70,85,0.8)' },
   badgeNotificacaoSidebar: { position: 'absolute', top: '-5px', right: '-8px', background: '#ff4655', color: '#fff', fontSize: '0.65rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '10px', boxShadow: '0 0 10px rgba(255,70,85,0.6)' },
 
@@ -830,6 +984,7 @@ const styles = {
   textAreaResposta: { width: '100%', height: '80px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid #ff85a2', borderRadius: '8px', color: '#fff', padding: '10px', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'none', outline: 'none' },
   btnSalvarResposta: { background: '#ff85a2', border: 'none', color: '#fff', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
   btnCancelarResposta: { background: 'transparent', border: '1px solid #ccc', color: '#ccc', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
+  btnMarcarLida: { marginTop: '10px', background: 'rgba(255,133,162,0.1)', border: '1px solid #ff85a2', color: '#ff85a2', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', transition: '0.3s' },
 
   musicPageBtn: { background: '#fff', color: '#ff85a2', border: 'none', padding: '12px 25px', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginTop: '35px' },
   musicGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', padding: '10px', width: '100%', maxWidth: '900px', margin: '0 auto' },
@@ -866,5 +1021,8 @@ const styles = {
   espacoCeu: { width: '100%', height: '500px', background: 'radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%)', borderRadius: '20px', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' },
   estrelaBrilho: { cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', filter: 'drop-shadow(0 0 5px #fff)' },
   estrelaCadente: { position: 'absolute', width: '3px', height: '3px', background: '#fff', borderRadius: '50%', boxShadow: '0 0 10px 2px #fff, 0 0 20px #ff85a2', transform: 'rotate(-45deg)' },
-  popupEstrelaFixo: { position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(15, 25, 35, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '15px', borderRadius: '12px', zIndex: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)' }
+  popupEstrelaFixo: { position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(15, 25, 35, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '15px', borderRadius: '12px', zIndex: 50, textAlign: 'center', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)' },
+
+  diarioGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', padding: '10px', width: '100%' },
+  diarioCard: { border: '1px solid', borderRadius: '15px', padding: '20px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: '0.3s', backdropFilter: 'blur(5px)', boxShadow: '0 5px 15px rgba(0,0,0,0.2)' }
 };
