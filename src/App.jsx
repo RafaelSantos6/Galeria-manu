@@ -808,7 +808,7 @@ export default function App() {
               </p>
 
               {!isRafaWriter ? (
-                <button onClick={abrirFormularioRafa} style={{ background: 'transparent', border: '1px dashed rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.5)', padding: '5px 15px', borderRadius: '10px', fontSize: '0.7rem', marginBottom: '20px', cursor: 'pointer' }}>
+                <button onClick={abrirFormularioRafa} style={{ background: 'transparent', border: '1px dashed #0f1923', color: '#0f1923', padding: '5px 15px', borderRadius: '10px', fontSize: '0.7rem', marginBottom: '20px', cursor: 'pointer' }}>
                   Acesso Restrito (Autor)
                 </button>
               ) : (
