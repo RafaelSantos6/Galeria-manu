@@ -454,6 +454,8 @@ export default function App() {
         <motion.button whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }} onClick={() => navigateTo('mercado')} style={{ ...styles.mercadoIconBtn, background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent' }} title="Acessar Mercado.Noturno">
           <div style={styles.smallDiamond}></div>
         </motion.button>
+
+    
       </header>
 
       <AnimatePresence>
@@ -471,7 +473,7 @@ export default function App() {
 
               <div style={styles.sidebarMenuGrid}>
                 <button onClick={() => navigateTo('galeria')} style={currentPage === 'galeria' ? styles.sideNavBtnActive : styles.sidebarBtn}><ImageIcon size={18} /> Galeria</button>
-                <button onClick={() => navigateTo('mensagens')} style={currentPage === 'mensagens' ? styles.sideNavBtnActive : styles.sidebarBtn}><BookHeart size={18} /> Momentos</button>
+                <button onClick={() => navigateTo('mensagens')} style={currentPage === 'mensagens' ? styles.sideNavBtnActive : styles.sidebarBtn}><BookHeart size={18} /> Leia Me quando...</button>
                 
                 <button onClick={() => navigateTo('escrever')} style={currentPage === 'escrever' ? styles.sideNavBtnActive : styles.sidebarBtn}>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -480,13 +482,13 @@ export default function App() {
                   </div>
                   Cartas
                 </button>
+                <button onClick={() => navigateTo('diario')} style={currentPage === 'diario' ? styles.navBtnActiveStyle : styles.sidebarBtn}><BookHeart size={18} /> O Diário</button>
 
-                <button onClick={() => navigateTo('motivos')} style={currentPage === 'motivos' ? styles.sideNavBtnActive : styles.sidebarBtn}><Gift size={18} /> Motivos</button>
+                {/* <button onClick={() => navigateTo('motivos')} style={currentPage === 'motivos' ? styles.sideNavBtnActive : styles.sidebarBtn}><Gift size={18} /> Motivos</button>
                 <button onClick={() => navigateTo('tempo')} style={currentPage === 'tempo' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Clock size={18} /> Tempo</button>
                 <button onClick={() => navigateTo('historia')} style={currentPage === 'historia' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Star size={18} /> História</button>
                 <button onClick={() => navigateTo('mapa')} style={currentPage === 'mapa' ? styles.navBtnActiveStyle : styles.sidebarBtn}><MapPin size={18} /> Lugares</button>
-                <button onClick={() => navigateTo('ceu')} style={currentPage === 'ceu' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Moon size={18} /> Nosso Céu</button>
-                <button onClick={() => navigateTo('diario')} style={currentPage === 'diario' ? styles.navBtnActiveStyle : styles.sidebarBtn}><BookHeart size={18} /> O Diário</button>
+                <button onClick={() => navigateTo('ceu')} style={currentPage === 'ceu' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Moon size={18} /> Nosso Céu</button> */}
               </div>
             </motion.nav>
           </>
