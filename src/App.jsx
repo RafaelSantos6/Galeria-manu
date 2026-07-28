@@ -893,17 +893,48 @@ export default function App() {
       <AnimatePresence>
         {cartaDiarioAtiva && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.overlay} onClick={() => setCartaDiarioAtiva(null)}>
-            <motion.div style={{ ...styles.modalContent, maxWidth: '500px', width: '90%', padding: '30px', background: '#fdfbf7' }} onClick={(e) => e.stopPropagation()} transition={{ type: "spring", stiffness: 250, damping: 30 }}>
-              <button style={{...styles.closeBtn, color: '#333'}} onClick={() => setCartaDiarioAtiva(null)}><X /></button>
-              <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center' }}>
+                        <motion.div 
+              style={{ 
+                ...styles.modalContent, 
+                maxWidth: '500px', 
+                width: '90%', 
+                padding: '30px', 
+                background: '#fdfbf7',
+                maxHeight: '85vh', 
+                display: 'flex',   
+              }} 
+              onClick={(e) => e.stopPropagation()} 
+              transition={{ type: "spring", stiffness: 250, damping: 30 }}
+            >
+              
+              <button 
+                style={{
+                  ...styles.closeBtn, 
+                  color: '#333',
+                  top: '15px',   
+                  right: '15px', 
+                  zIndex: 10     
+                }} 
+                onClick={() => setCartaDiarioAtiva(null)}
+              >
+                <X />
+              </button>
+              
+              <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center', flexShrink: 0 }}>
                 Carta de {cartaDiarioAtiva.dataDesbloqueio.split('-').reverse().join('/')}
               </h2>
-              <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap' }}>
-                {cartaDiarioAtiva.texto}
-              </p>
-              <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                <Heart size={24} fill="#ff85a2" color="#ff85a2" />
+              
+              <div style={{ overflowY: 'auto', paddingRight: '10px', flexGrow: 1 }}>
+                
+                <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap', margin: 0 }}>
+                  {cartaDiarioAtiva.texto}
+                </p>
+                
+                <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '10px' }}>
+                  <Heart size={24} fill="#ff85a2" color="#ff85a2" />
+                </div>
               </div>
+
             </motion.div>
           </motion.div>
         )}
