@@ -890,56 +890,65 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* --- INÍCIO DO MODAL DO DIÁRIO CORRIGIDO 2.0 --- */}
       <AnimatePresence>
         {cartaDiarioAtiva && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.overlay} onClick={() => setCartaDiarioAtiva(null)}>
-                        <motion.div 
+            
+            {/* 1. CONTAINER PRINCIPAL: Ajuste de padding e box-sizing */}
+            <motion.div 
               style={{ 
                 ...styles.modalContent, 
                 maxWidth: '500px', 
                 width: '90%', 
-                padding: '30px', 
+                padding: '40px 20px 20px 20px', /* 40px no topo afasta o título do botão X */
                 background: '#fdfbf7',
                 maxHeight: '85vh', 
                 display: 'flex',   
+                flexDirection: 'column', /* Ordem vertical */
+                alignItems: 'center', 
+                boxSizing: 'border-box' /* Impede que o padding quebre a largura no celular */
               }} 
               onClick={(e) => e.stopPropagation()} 
               transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
               
+              {/* 2. BOTÃO FECHAR */}
               <button 
                 style={{
                   ...styles.closeBtn, 
                   color: '#333',
-                  top: '15px',   
-                  right: '15px', 
-                  zIndex: 10     
+                  top: '15px',    
+                  right: '15px',  
+                  zIndex: 10      
                 }} 
                 onClick={() => setCartaDiarioAtiva(null)}
               >
                 <X />
               </button>
               
-              <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center', flexShrink: 0 }}>
+              {/* 3. TÍTULO: Adicionado width: '100%' para forçar quebra de linha */}
+              <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center', width: '100%', flexShrink: 0 }}>
                 Carta de {cartaDiarioAtiva.dataDesbloqueio.split('-').reverse().join('/')}
               </h2>
               
-              <div style={{ overflowY: 'auto', paddingRight: '10px', flexGrow: 1 }}>
+              {/* 4. ÁREA DE TEXTO: Adicionado width: '100%' e textAlign: 'left' no parágrafo */}
+              <div style={{ overflowY: 'auto', width: '100%', paddingRight: '5px', flexGrow: 1 }}>
                 
-                <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap', margin: 0 }}>
+                <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap', margin: 0, textAlign: 'left' }}>
                   {cartaDiarioAtiva.texto}
                 </p>
                 
                 <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '10px' }}>
                   <Heart size={24} fill="#ff85a2" color="#ff85a2" />
                 </div>
+                
               </div>
 
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
-      
+      </AnimatePresence>      
       <style>{`
         .custom-romantic-popup .leaflet-popup-content-wrapper { background: rgba(255, 255, 255, 0.95) !important; border-radius: 15px !important; padding: 5px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; max-width: 250px !important; }
         .custom-romantic-popup .leaflet-popup-tip { background: rgba(255, 255, 255, 0.95) !important; }
