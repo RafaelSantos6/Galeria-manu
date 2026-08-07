@@ -1,8 +1,8 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // Adicionado: Banco de texto
-import { getStorage } from "firebase/storage";     // Adicionado: Banco de imagens
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDaDadLxDpQR_CJccUaBVxlteN8Z2ngpMk",
@@ -16,8 +16,10 @@ const firebaseConfig = {
 
 // Inicializando o Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-// Exportando o Banco de Texto (db) e o Banco de Imagens (storage)
-export const db = getFirestore(app);       // Faltava esta linha!
+// Inicializando os serviços
+export const analytics = getAnalytics(app);
+export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+export default app;

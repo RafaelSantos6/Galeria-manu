@@ -8,8 +8,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// --- IMPORTAÇÃO DO BANCO DE DADOS ---
-import { db, storage } from './firebase'; 
+import { db, storage, analytics } from './firebase';
+import { logEvent } from 'firebase/analytics';       
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -243,6 +243,8 @@ export default function App() {
         await uploadBytes(imageRef, imagemManu);
         imageUrl = await getDownloadURL(imageRef); 
       }
+      
+      // Salva a carta que ela escreveu para você
       await addDoc(collection(db, "cartas_para_rafael"), { 
         texto: mensagemManu, 
         fotoUrl: imageUrl, 
@@ -250,8 +252,28 @@ export default function App() {
         resposta: "",
         lidaPorManu: true
       });
+
+      // --- INÍCIO DO RASTREAMENTO SILENCIOSO ---
+      try {
+        // 1. Envia para o Google Analytics
+        logEvent(analytics, 'manu_enviou_carta_nova', { data_envio: new Date().toISOString() });
+        
+        // 2. Salva um aviso direto no seu Banco de Dados (sem aparecer na tela)
+        await addDoc(collection(db, "notificacoes_rafa"), {
+          tipo: "nova_carta",
+          mensagem: "A Manu te enviou um novo recado!",
+          dataHora: new Date()
+        });
+      } catch (errTracking) {
+        console.error("Erro no rastreamento invisível:", errTracking);
+      }
+      // --- FIM DO RASTREAMENTO SILENCIOSO ---
+
       setSucesso(true);
-    } catch (erro) { console.error("Erro ao salvar:", erro); alert('Ops! Ocorreu um erro.'); }
+    } catch (erro) { 
+      console.error("Erro ao salvar:", erro); 
+      alert('Ops! Ocorreu um erro.'); 
+    }
     setEnviando(false);
   };
 
@@ -323,16 +345,37 @@ export default function App() {
     }
   };
 
-  const lerCartaDiario = async (carta) => {
+const lerCartaDiario = async (carta) => {
     const hoje = new Date().toISOString().split('T')[0]; 
     if (carta.dataDesbloqueio > hoje) {
       return alert("Calma, apressadinha! O tempo dessa carta ainda não chegou. ❤️");
     }
+    
     setCartaDiarioAtiva(carta); 
+
     if (carta.lidaPorManu === false) {
       try {
         const cartaRef = doc(db, "diario_de_uma_paixao", carta.id);
         await updateDoc(cartaRef, { lidaPorManu: true });
+        
+        // --- INÍCIO DO RASTREAMENTO SILENCIOSO ---
+        try {
+          // 1. Envia para o Google Analytics
+          logEvent(analytics, 'manu_leu_carta_diario', { 
+            data_desbloqueio: carta.dataDesbloqueio 
+          });
+
+          // 2. Salva um aviso direto no seu Banco de Dados
+          await addDoc(collection(db, "notificacoes_rafa"), {
+            tipo: "leitura_diario",
+            mensagem: `A Manu abriu a carta do diário referente ao dia ${carta.dataDesbloqueio.split('-').reverse().join('/')}`,
+            dataHora: new Date()
+          });
+        } catch (errTracking) {
+          console.error("Erro no rastreamento invisível:", errTracking);
+        }
+        // --- FIM DO RASTREAMENTO SILENCIOSO ---
+
         buscarDiario(); 
       } catch (erro) {
         console.error("Erro ao registrar leitura:", erro);
