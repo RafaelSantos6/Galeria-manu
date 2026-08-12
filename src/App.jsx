@@ -9,7 +9,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { db, storage, analytics } from './firebase';
-import { logEvent } from 'firebase/analytics';       
+import { logEvent } from 'firebase/analytics';
 import { collection, addDoc, getDocs, updateDoc, doc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -90,7 +90,7 @@ const MOTIVOS = [
   "Amo saber que posso contar com você para absolutamente tudo."
 ];
 
-const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00'); 
+const DATA_DO_NAMORO = new Date('2023-11-24T19:00:00');
 
 const NOSSA_HISTORIA = [
   { id: 1, data: 'O Começo', titulo: 'Como tudo começou', descricao: 'O dia em que os nossos caminhos se cruzaram e a minha vida ficou muito mais colorida eu mal conseguia olhar em seus olhos, mas não pude esconder os sentimentos que senti.' },
@@ -139,18 +139,19 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [showSuccessAnim, setShowSuccessAnim] = useState(false);
+  const [showPopupSurpresa, setShowPopupSurpresa] = useState(false);
   const [currentPage, setCurrentPage] = useState('galeria');
   const [activeMessage, setActiveMessage] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [revelados, setRevelados] = useState({});
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // --- ESTADOS DA ABA CARTAS ---
-  const [cartasTab, setCartasTab] = useState('escrever'); 
+  const [cartasTab, setCartasTab] = useState('escrever');
   const [cartasList, setCartasList] = useState([]);
   const [carregandoCartas, setCarregandoCartas] = useState(false);
   const [notificacoes, setNotificacoes] = useState(0);
-  
+
   // --- ESTADOS DO DIÁRIO DE UMA PAIXÃO ---
   const [diarioList, setDiarioList] = useState([]);
   const [textoDiario, setTextoDiario] = useState('');
@@ -170,7 +171,7 @@ export default function App() {
   const [motivoSorteado, setMotivoSorteado] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  
+
   const [mapCenter, setMapCenter] = useState([-26.3045, -48.8464]);
 
   const audioRefs = useRef({});
@@ -241,13 +242,13 @@ export default function App() {
       if (imagemManu) {
         const imageRef = ref(storage, `recados/${Date.now()}_${imagemManu.name}`);
         await uploadBytes(imageRef, imagemManu);
-        imageUrl = await getDownloadURL(imageRef); 
+        imageUrl = await getDownloadURL(imageRef);
       }
-      
+
       // Salva a carta que ela escreveu para você
-      await addDoc(collection(db, "cartas_para_rafael"), { 
-        texto: mensagemManu, 
-        fotoUrl: imageUrl, 
+      await addDoc(collection(db, "cartas_para_rafael"), {
+        texto: mensagemManu,
+        fotoUrl: imageUrl,
         data: new Date(),
         resposta: "",
         lidaPorManu: true
@@ -255,10 +256,8 @@ export default function App() {
 
       // --- INÍCIO DO RASTREAMENTO SILENCIOSO ---
       try {
-        // 1. Envia para o Google Analytics
         logEvent(analytics, 'manu_enviou_carta_nova', { data_envio: new Date().toISOString() });
-        
-        // 2. Salva um aviso direto no seu Banco de Dados (sem aparecer na tela)
+
         await addDoc(collection(db, "notificacoes_rafa"), {
           tipo: "nova_carta",
           mensagem: "A Manu te enviou um novo recado!",
@@ -270,9 +269,9 @@ export default function App() {
       // --- FIM DO RASTREAMENTO SILENCIOSO ---
 
       setSucesso(true);
-    } catch (erro) { 
-      console.error("Erro ao salvar:", erro); 
-      alert('Ops! Ocorreu um erro.'); 
+    } catch (erro) {
+      console.error("Erro ao salvar:", erro);
+      alert('Ops! Ocorreu um erro.');
     }
     setEnviando(false);
   };
@@ -291,11 +290,11 @@ export default function App() {
       const cartaRef = doc(db, "cartas_para_rafael", cartaId);
       await updateDoc(cartaRef, {
         resposta: respostaRafa,
-        lidaPorManu: false 
+        lidaPorManu: false
       });
       setRespostaRafa('');
       setRespondendoId(null);
-      buscarCartas(); 
+      buscarCartas();
     } catch (erro) {
       console.error("Erro ao enviar resposta:", erro);
       alert("Houve um erro ao tentar salvar a resposta.");
@@ -339,33 +338,31 @@ export default function App() {
       alert("Carta eternizada com sucesso!");
       setTextoDiario('');
       setDataDesbloqueio('');
-      buscarDiario(); 
+      buscarDiario();
     } catch (erro) {
       console.error("Erro ao salvar diário:", erro);
     }
   };
 
-const lerCartaDiario = async (carta) => {
-    const hoje = new Date().toISOString().split('T')[0]; 
+  const lerCartaDiario = async (carta) => {
+    const hoje = new Date().toISOString().split('T')[0];
     if (carta.dataDesbloqueio > hoje) {
       return alert("Calma, apressadinha! O tempo dessa carta ainda não chegou. ❤️");
     }
-    
-    setCartaDiarioAtiva(carta); 
+
+    setCartaDiarioAtiva(carta);
 
     if (carta.lidaPorManu === false) {
       try {
         const cartaRef = doc(db, "diario_de_uma_paixao", carta.id);
         await updateDoc(cartaRef, { lidaPorManu: true });
-        
+
         // --- INÍCIO DO RASTREAMENTO SILENCIOSO ---
         try {
-          // 1. Envia para o Google Analytics
-          logEvent(analytics, 'manu_leu_carta_diario', { 
-            data_desbloqueio: carta.dataDesbloqueio 
+          logEvent(analytics, 'manu_leu_carta_diario', {
+            data_desbloqueio: carta.dataDesbloqueio
           });
 
-          // 2. Salva um aviso direto no seu Banco de Dados
           await addDoc(collection(db, "notificacoes_rafa"), {
             tipo: "leitura_diario",
             mensagem: `A Manu abriu a carta do diário referente ao dia ${carta.dataDesbloqueio.split('-').reverse().join('/')}`,
@@ -376,7 +373,7 @@ const lerCartaDiario = async (carta) => {
         }
         // --- FIM DO RASTREAMENTO SILENCIOSO ---
 
-        buscarDiario(); 
+        buscarDiario();
       } catch (erro) {
         console.error("Erro ao registrar leitura:", erro);
       }
@@ -408,8 +405,13 @@ const lerCartaDiario = async (carta) => {
     e.preventDefault();
     if (password === '2411') {
       setShowSuccessAnim(true);
-      setTimeout(() => setIsAuthenticated(true), 1800);
+      setTimeout(() => setShowPopupSurpresa(true), 1800);
     } else alert('Senha incorreta! ❤️');
+  };
+
+  const fecharPopupEEntrar = () => {
+    setShowPopupSurpresa(false);
+    setIsAuthenticated(true);
   };
 
   const downloadVale = (id, label) => {
@@ -424,7 +426,7 @@ const lerCartaDiario = async (carta) => {
     NOSSAS_MUSICAS.forEach((track) => {
       const audioElement = audioRefs.current[track.id];
       if (audioElement) {
-        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); } 
+        if (track.id === id) { audioElement.play(); setPlayingAudioId(id); }
         else audioElement.pause();
       }
     });
@@ -445,12 +447,14 @@ const lerCartaDiario = async (carta) => {
   const navigateTo = (page) => {
     setCurrentPage(page);
     setActiveMessage(null);
-    setIsSidebarOpen(false); 
+    setIsSidebarOpen(false);
   };
 
   if (!isAuthenticated) {
     return (
       <div style={{ ...styles.container, overflow: 'hidden', position: 'relative' }}>
+
+        {/* --- INÍCIO DO BACKGROUND DE CORAÇÕES --- */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 0 }}>
           {coracoesIniciais.map((c) => (
             <motion.div key={c.id} initial={{ y: '110vh', opacity: 0 }} animate={{ y: '-10vh', opacity: [0, 0.8, 0.8, 0], x: [0, -30, 30, 0] }} transition={{ duration: c.duration, repeat: Infinity, delay: c.delay, ease: 'easeInOut' }} style={{ position: 'absolute', left: c.left, color: 'rgba(255, 255, 255, 0.5)' }}>
@@ -459,15 +463,56 @@ const lerCartaDiario = async (carta) => {
           ))}
         </div>
 
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={showSuccessAnim ? { scale: 1.2, opacity: 0 } : { scale: 1, opacity: 1 }} transition={{ duration: 0.5 }} style={{ ...styles.loginCard, zIndex: 10 }}>
-          <Heart color="#ff85a2" fill="#ff85a2" size={48} />
-          <h2 style={{ color: '#fff', margin: '20px 0' }}>Céu de Memórias</h2>
-          <form onSubmit={handleLogin}>
-            <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
-            <br /><button type="submit" style={styles.button}>Entrar</button>
-          </form>
-        </motion.div>
+        {/* --- TELA DE LOGIN ATUALIZADA COM AS ANIMAÇÕES --- */}
+        {!showPopupSurpresa && (
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={showSuccessAnim ? { scale: 1.2, opacity: 0 } : { scale: 1, opacity: 1 }} transition={{ duration: 0.5 }} style={{ ...styles.loginCard, zIndex: 10 }}>
+            
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1] }} 
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <Heart color="#ff85a2" fill="#ff85a2" size={48} />
+            </motion.div>
 
+            {/* Título com animação de descida */}
+            <motion.h2 
+              initial={{ opacity: 0, y: -20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.8, delay: 0.2 }}
+              style={{ color: '#fff', margin: '20px 0 5px 0' }}
+            >
+              Céu de Memórias
+            </motion.h2>
+
+            {/* Novo subtítulo para ela sentir a mudança logo de cara */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', marginBottom: '20px', fontStyle: 'italic' }}
+            >
+              Uma nova versão do nosso cantinho...
+            </motion.p>
+
+            <form onSubmit={handleLogin}>
+              <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} />
+              <br />
+              {/* Botão com efeito de pulso constante */}
+              <motion.button 
+                type="submit" 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{ boxShadow: ['0px 0px 0px rgba(255,133,162,0)', '0px 0px 15px rgba(255,133,162,0.6)', '0px 0px 0px rgba(255,133,162,0)'] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                style={styles.button}
+              >
+                Entrar
+              </motion.button>
+            </form>
+          </motion.div>
+        )}
+        
+        {/* --- ANIMAÇÃO DE SUCESSO DO LOGIN --- */}
         {showSuccessAnim && (
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 50, pointerEvents: 'none' }}>
             {Array.from({ length: 40 }).map((_, i) => {
@@ -481,13 +526,37 @@ const lerCartaDiario = async (carta) => {
             })}
           </div>
         )}
+
+        {/* --- POPUP SURPRESA APÓS O LOGIN --- */}
+        <AnimatePresence>
+          {showPopupSurpresa && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.8 }} 
+              style={styles.popupSurpresaOverlay}
+            >
+              <div style={styles.popupSurpresaContent}>
+                <Heart size={40} color="#ff85a2" fill="#ff85a2" style={{ marginBottom: '15px' }} />
+                <h2 style={{ color: '#ff85a2', margin: '0 0 15px 0', fontFamily: 'serif' }}>Aviso Especial</h2>
+                <p style={{ color: '#333', fontSize: '1.2rem', marginBottom: '25px', lineHeight: '1.5' }}>
+                  Sinto sua falta e novidades vem ai
+                </p>
+                <button onClick={fecharPopupEEntrar} style={styles.button}>
+                  Continuar
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     );
   }
 
   return (
     <div style={{ ...styles.container, background: currentBg }}>
-      
+
       <header style={styles.header}>
         <button onClick={() => setIsSidebarOpen(true)} style={styles.menuToggleBtn}>
           <Menu size={24} />
@@ -497,8 +566,6 @@ const lerCartaDiario = async (carta) => {
         <motion.button whileHover={{ scale: 1.1, boxShadow: '0 0 15px rgba(255, 70, 85, 0.8)' }} onClick={() => navigateTo('mercado')} style={{ ...styles.mercadoIconBtn, background: currentPage === 'mercado' ? 'rgba(255, 70, 85, 0.2)' : 'transparent' }} title="Acessar Mercado.Noturno">
           <div style={styles.smallDiamond}></div>
         </motion.button>
-
-    
       </header>
 
       <AnimatePresence>
@@ -525,7 +592,16 @@ const lerCartaDiario = async (carta) => {
                   </div>
                   Cartas
                 </button>
+                <button onClick={() => navigateTo('voz')} style={currentPage === 'voz' ? styles.sideNavBtnActive : styles.sidebarBtn}>
+  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+    <Music size={18} />
+    {/* O ponto de notificação específico desta aba */}
+    {notificacoes > 0 && <span style={styles.badgeNotificacaoSidebar}>1</span>}
+  </div>
+  Mensagem de Voz
+</button>
                 <button onClick={() => navigateTo('diario')} style={currentPage === 'diario' ? styles.navBtnActiveStyle : styles.sidebarBtn}><BookHeart size={18} /> O Diário</button>
+
 
                 <button onClick={() => navigateTo('motivos')} style={currentPage === 'motivos' ? styles.sideNavBtnActive : styles.sidebarBtn}><Gift size={18} /> Motivos</button>
                 <button onClick={() => navigateTo('tempo')} style={currentPage === 'tempo' ? styles.navBtnActiveStyle : styles.sidebarBtn}><Clock size={18} /> Tempo</button>
@@ -540,16 +616,48 @@ const lerCartaDiario = async (carta) => {
 
       <main style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
-          
+
+          {/* --- NOVA GALERIA NO ESTILO MURAL POLAROID --- */}
           {currentPage === 'galeria' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
               <motion.div key="galeria" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.grid}>
-                {MEMORIES.map((item) => (
-                  <motion.div key={item.id} layoutId={item.id} onClick={() => setSelectedId(item.id)} animate={!selectedId ? { y: [0, -10, 0] } : { y: 0 }} transition={{ y: { duration: 4, repeat: Infinity, ease: "easeInOut" } }} style={{ ...styles.cardFrame, opacity: selectedId === item.id ? 0 : 1, pointerEvents: selectedId ? 'none' : 'auto' }}>
-                    <div style={styles.imageContainer}><img src={item.url} style={styles.imageFill} alt={item.title} /></div>
-                    <p style={styles.cardTitle}>{item.title}</p>
-                  </motion.div>
-                ))}
+                {MEMORIES.map((item, index) => {
+                  
+                  // Lógica matemática para alternar a inclinação das fotos
+                  const rotacao = index % 2 === 0 ? -4 : (index % 3 === 0 ? 3 : 4);
+
+                  return (
+                    <motion.div 
+                      key={item.id} 
+                      layoutId={item.id} 
+                      onClick={() => setSelectedId(item.id)} 
+                      
+                      // Animação de entrada e hover
+                      initial={{ rotate: rotacao, opacity: 0, y: 20 }}
+                      animate={{ rotate: rotacao, opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.05, rotate: 0, zIndex: 10, boxShadow: '0 15px 30px rgba(0,0,0,0.3)' }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20, delay: index * 0.1 }} 
+                      
+                      style={{ 
+                        ...styles.cardFrame, 
+                        // Visual de Polaroid 
+                        background: '#fff', 
+                        padding: '12px 12px 35px 12px',
+                        border: 'none',
+                        boxShadow: '0 5px 15px rgba(0,0,0,0.15)',
+                        opacity: selectedId === item.id ? 0 : 1, 
+                        pointerEvents: selectedId ? 'none' : 'auto' 
+                      }}
+                    >
+                      <div style={styles.imageContainer}>
+                        <img src={item.url} style={styles.imageFill} alt={item.title} />
+                      </div>
+                      <p style={{ ...styles.cardTitle, color: '#333', fontFamily: 'serif', fontStyle: 'italic', marginTop: '10px' }}>
+                        {item.title}
+                      </p>
+                    </motion.div>
+                  );
+                })}
               </motion.div>
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigateTo('musicas')} style={styles.musicPageBtn}>
                 <Music size={18} /> Ouvir Nossa Trilha Sonora ❤️
@@ -569,6 +677,28 @@ const lerCartaDiario = async (carta) => {
             </motion.div>
           )}
 
+          {currentPage === 'voz' && (
+            <motion.div key="voz" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={styles.mercadoMain}>
+              <h1 style={{ ...styles.mercadoHeader, color: '#ff85a2', textShadow: '2px 2px 10px rgba(255,133,162,0.3)', lineHeight: '1.2' }}>
+                VOZ SECRETA
+              </h1>
+              <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                UM RECADO EXCLUSIVO EM ÁUDIO PARA VOCÊ
+              </p>
+
+              <div style={styles.formContainer}>
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <Heart size={48} color="#ff85a2" fill="#ff85a2" style={{ animation: 'pulse 2s infinite' }} />
+                </div>
+                <p style={{ color: '#fff', fontSize: '1.05rem', lineHeight: '1.6', fontFamily: 'serif', marginBottom: '20px' }}>
+                  Aperte o play abaixo para ouvir o que gravei especialmente para o seu dia.❤️
+                </p>
+                
+                <audio controls src="/audio-secreto.mp3" style={{ width: '100%', borderRadius: '8px' }} />
+              </div>
+            </motion.div>
+          )}
+
           {currentPage === 'mercado' && (
             <motion.div key="mercado" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>MERCADO.NOTURNO</h1>
@@ -577,8 +707,8 @@ const lerCartaDiario = async (carta) => {
                 {MERCADO_ITENS.map((item) => (
                   <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <motion.div ref={el => cardRefs.current[item.id] = el} whileHover={{ scale: 1.02 }} onClick={() => toggleRevelar(item.id)} style={{ ...styles.mercadoCard, borderColor: revelados[item.id] ? item.cor : 'rgba(255,255,255,0.3)', background: revelados[item.id] ? '#1a252e' : 'rgba(0,0,0,0.6)' }}>
-                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) : 
-                      (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
+                      {!revelados[item.id] ? (<div style={{ ...styles.cardCenter, color: 'rgba(255,255,255,0.3)' }}><div style={styles.diamondOuter}><div style={styles.diamondInner}></div></div></div>) :
+                        (<motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} style={styles.cardContent}><span style={{ color: item.cor, fontSize: '0.7rem', fontWeight: 'bold' }}>VALORANT // VALE</span><h3 style={styles.mercadoLabel}>{item.label}</h3><div style={{ ...styles.glowEffect, backgroundColor: item.cor }}></div></motion.div>)}
                     </motion.div>
                     {revelados[item.id] && (<button onClick={() => downloadVale(item.id, item.label)} style={styles.downloadBtn}><Download size={16} /> Salvar Vale</button>)}
                   </div>
@@ -591,7 +721,7 @@ const lerCartaDiario = async (carta) => {
             <motion.div key="escrever" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={styles.mercadoMain}>
               <h1 style={styles.mercadoHeader}>CAIXA DE CARTAS</h1>
               <p style={{ color: '#fff', marginBottom: '30px', fontFamily: 'monospace' }}>NOSSO ESPAÇO DE MENSAGENS</p>
-              
+
               <div style={styles.cartasTabContainer}>
                 <button onClick={() => setCartasTab('escrever')} style={cartasTab === 'escrever' ? styles.cartasTabBtnActive : styles.cartasTabBtn}>Escrever Novo Recado</button>
                 <button onClick={() => setCartasTab('lidas')} style={cartasTab === 'lidas' ? styles.cartasTabBtnActive : styles.cartasTabBtn}>
@@ -606,11 +736,11 @@ const lerCartaDiario = async (carta) => {
                       <textarea style={styles.textArea} placeholder="Escreva aqui tudo o que você sente..." value={mensagemManu} onChange={(e) => setMensagemManu(e.target.value)} />
                       <label style={styles.uploadBtn}><ImagePlus size={20} />{imagemManu ? imagemManu.name : "Anexar uma foto (Opcional)"}<input type="file" accept="image/*" onChange={(e) => setImagemManu(e.target.files[0])} style={{ display: 'none' }} /></label>
                       <button onClick={enviarParaRafael} disabled={enviando} style={{ ...styles.downloadBtn, width: '100%', opacity: enviando ? 0.5 : 1, marginTop: '10px' }}>
-                        {enviando ? "ENVIANDO..." : <><Send size={16} style={{marginRight: '8px'}}/> ENVIAR PARA O RAFAEL</>}
+                        {enviando ? "ENVIANDO..." : <><Send size={16} style={{ marginRight: '8px' }} /> ENVIAR PARA O RAFAEL</>}
                       </button>
                     </>
                   ) : (
-                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => {setSucesso(false); setMensagemManu(''); setImagemManu(null);}} style={styles.navBtnActiveStyle}>Escrever mais um</button></motion.div>
+                    <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} style={{ padding: '20px' }}><Heart color="#ff4655" fill="#ff4655" size={60} style={{ margin: '0 auto 20px auto', display: 'block' }} /><h2 style={{ color: '#fff' }}>Recado Guardado!</h2><button onClick={() => { setSucesso(false); setMensagemManu(''); setImagemManu(null); }} style={styles.navBtnActiveStyle}>Escrever mais um</button></motion.div>
                   )}
                 </div>
               ) : (
@@ -620,25 +750,42 @@ const lerCartaDiario = async (carta) => {
                   ) : cartasList.length === 0 ? (
                     <p style={{ color: '#fff' }}>Nenhuma carta foi enviada ainda. Que tal ser a primeira a escrever?</p>
                   ) : (
-                    cartasList.map((carta) => (
-                      <div key={carta.id} style={styles.cartaItem}>
-                        <span style={styles.cartaData}>
-                          {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') : 'Data desconhecida'}
-                        </span>
-                        
+                    cartasList.map((carta, index) => (
+                      <motion.div 
+                        key={carta.id} 
+                        // A carta começa transparente e um pouco mais abaixo (y: 30)
+                        initial={{ opacity: 0, y: 30 }}
+                        // A carta desliza para a posição original (y: 0) e fica visível
+                        animate={{ opacity: 1, y: 0 }}
+                        // O delay multiplica a posição da carta por 0.15s, criando o efeito cascata
+                        transition={{ duration: 0.6, delay: index * 0.15, ease: "easeOut" }}
+                        style={styles.cartaItem}
+                      >
+                        {/* Um detalhe visual: um pequeno brilho no canto superior */}
+                        <div style={styles.cartaGlowEfeito}></div>
+
+                        <div style={styles.cartaHeader}>
+                          <span style={styles.cartaData}>
+                            {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') : 'Data desconhecida'}
+                          </span>
+                          <Heart size={16} fill="rgba(255,133,162,0.3)" color="#ff85a2" />
+                        </div>
+
                         {carta.fotoUrl && (
-                          <img src={carta.fotoUrl} alt="Anexo da carta" style={styles.cartaFotoUrl} />
+                          <div style={styles.cartaImagemContainer}>
+                            <img src={carta.fotoUrl} alt="Anexo da carta" style={styles.cartaFotoUrl} />
+                          </div>
                         )}
-                        
+
                         <p style={styles.cartaTexto}>{carta.texto}</p>
 
                         {carta.resposta ? (
                           <div style={styles.respostaBox}>
-                            <h4 style={{ color: '#00ff88', margin: '0 0 5px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                              <MessageCircleHeart size={16} /> Rafa respondeu:
+                            <h4 style={{ color: '#00ff88', margin: '0 0 8px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                              <MessageCircleHeart size={18} /> Rafa respondeu:
                             </h4>
                             <p style={styles.respostaTexto}>{carta.resposta}</p>
-                            
+
                             {carta.lidaPorManu === false && (
                               <button onClick={() => marcarComoLida(carta.id)} style={styles.btnMarcarLida}>
                                 <Heart size={14} fill="#ff85a2" color="#ff85a2" /> Marcar como lida
@@ -646,20 +793,20 @@ const lerCartaDiario = async (carta) => {
                             )}
                           </div>
                         ) : (
-                          <div style={{ marginTop: '15px' }}>
+                          <div style={{ marginTop: '15px', position: 'relative', zIndex: 2 }}>
                             {respondendoId === carta.id ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <textarea 
-                                  style={styles.textAreaResposta} 
-                                  placeholder="Escreva a sua resposta..." 
-                                  value={respostaRafa} 
-                                  onChange={(e) => setRespostaRafa(e.target.value)} 
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <textarea
+                                  style={styles.textAreaResposta}
+                                  placeholder="Escreva a sua resposta..."
+                                  value={respostaRafa}
+                                  onChange={(e) => setRespostaRafa(e.target.value)}
                                 />
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                   <button onClick={() => enviarResposta(carta.id)} style={styles.btnSalvarResposta}>Salvar Resposta</button>
                                   <button onClick={() => setRespondendoId(null)} style={styles.btnCancelarResposta}>Cancelar</button>
                                 </div>
-                              </div>
+                              </motion.div>
                             ) : (
                               <button onClick={() => setRespondendoId(carta.id)} style={styles.btnResponderRafa}>
                                 <PenTool size={14} /> Responder (Apenas Rafa)
@@ -667,7 +814,7 @@ const lerCartaDiario = async (carta) => {
                             )}
                           </div>
                         )}
-                      </div>
+                      </motion.div>
                     ))
                   )}
                 </div>
@@ -696,7 +843,7 @@ const lerCartaDiario = async (carta) => {
               <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '40px', fontSize: '0.95rem' }}>Clique no pote para descobrir motivos do porquê eu te amo.</p>
               <motion.div onClick={sortearMotivo} animate={isShaking ? { rotate: [-5, 5, -5, 5, 0], scale: 1.05 } : { rotate: 0, scale: 1 }} transition={{ duration: 0.5 }} style={styles.poteContainer}>
                 <div style={styles.poteLid}></div>
-                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{color: '#fff', marginTop: '10px', fontWeight: 'bold'}}>Me aperte</p></div>
+                <div style={styles.poteBody}><Heart size={40} color="#ff85a2" fill={isShaking ? "#ff85a2" : "none"} /><p style={{ color: '#fff', marginTop: '10px', fontWeight: 'bold' }}>Me aperte</p></div>
               </motion.div>
               <AnimatePresence>
                 {motivoSorteado && !isShaking && (
@@ -751,12 +898,12 @@ const lerCartaDiario = async (carta) => {
               <div style={styles.mapLayoutContainer}>
                 <div style={styles.mapSidebar}>
                   {PONTOS_MAPA.map((ponto) => (
-                    <motion.div 
-                      key={ponto.id} 
+                    <motion.div
+                      key={ponto.id}
                       whileHover={{ scale: 1.02 }}
                       onClick={() => setMapCenter(ponto.coords)}
-                      style={{ 
-                        ...styles.sidebarCard, 
+                      style={{
+                        ...styles.sidebarCard,
                         border: mapCenter === ponto.coords ? '2px solid #ff85a2' : '1px solid rgba(255,255,255,0.1)',
                         background: mapCenter === ponto.coords ? 'rgba(255,133,162,0.15)' : 'rgba(0,0,0,0.4)'
                       }}
@@ -774,7 +921,7 @@ const lerCartaDiario = async (carta) => {
                       url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                     />
                     <ChangeView center={mapCenter} />
-                    
+
                     {PONTOS_MAPA.map((ponto) => (
                       <Marker key={ponto.id} position={ponto.coords} icon={heartIcon}>
                         <Popup className="custom-romantic-popup">
@@ -801,7 +948,7 @@ const lerCartaDiario = async (carta) => {
               <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
                 RELAXA, RESPIRA E OLHA PARA AS ESTRELAS
               </p>
-              
+
               <div style={styles.espacoCeu}>
                 <motion.div
                   animate={{ x: ['-10vw', '110vw'], y: ['-10vh', '80vh'], opacity: [0, 1, 1, 0] }}
@@ -824,10 +971,10 @@ const lerCartaDiario = async (carta) => {
 
                 <AnimatePresence>
                   {activeMessage && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 15 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      exit={{ opacity: 0, y: 15 }} 
+                    <motion.div
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 15 }}
                       style={styles.popupEstrelaFixo}
                     >
                       <h4 style={{ margin: '0 0 5px 0', color: '#ff85a2', fontSize: '1.05rem', fontWeight: 'bold' }}>
@@ -849,7 +996,7 @@ const lerCartaDiario = async (carta) => {
                 DIÁRIO
               </h1>
               <p style={{ color: '#fff', marginTop: '15px', marginBottom: '30px', fontFamily: 'monospace', letterSpacing: '1px' }}>
-               MEUS 365 DIAS DE AMOR. UMA CARTA DE CADA VEZ.
+                MEUS 365 DIAS DE AMOR. UMA CARTA DE CADA VEZ.
               </p>
 
               {!isRafaWriter ? (
@@ -859,17 +1006,17 @@ const lerCartaDiario = async (carta) => {
               ) : (
                 <div style={{ ...styles.formContainer, marginBottom: '30px', border: '1px solid #00ff88' }}>
                   <h3 style={{ color: '#00ff88', margin: '0 0 10px 0' }}>Escrever nova página</h3>
-                  <input 
-                    type="date" 
-                    value={dataDesbloqueio} 
+                  <input
+                    type="date"
+                    value={dataDesbloqueio}
                     onChange={(e) => setDataDesbloqueio(e.target.value)}
                     style={{ padding: '10px', borderRadius: '8px', border: 'none', marginBottom: '10px' }}
                   />
-                  <textarea 
-                    style={styles.textArea} 
-                    placeholder="Escreva a carta que ela lerá no dia escolhido acima..." 
-                    value={textoDiario} 
-                    onChange={(e) => setTextoDiario(e.target.value)} 
+                  <textarea
+                    style={styles.textArea}
+                    placeholder="Escreva a carta que ela lerá no dia escolhido acima..."
+                    value={textoDiario}
+                    onChange={(e) => setTextoDiario(e.target.value)}
                   />
                   <button onClick={salvarCartaDiario} style={{ ...styles.btnSalvarResposta, background: '#00ff88', color: '#000', marginTop: '10px' }}>Eternizar Carta</button>
                 </div>
@@ -883,7 +1030,7 @@ const lerCartaDiario = async (carta) => {
                   const dataVisual = `${dia}/${mes}/${ano}`;
 
                   return (
-                    <motion.div 
+                    <motion.div
                       key={carta.id}
                       whileHover={{ scale: estaTrancada ? 1 : 1.05 }}
                       onClick={() => lerCartaDiario(carta)}
@@ -906,7 +1053,7 @@ const lerCartaDiario = async (carta) => {
                           <p style={{ margin: 0, fontSize: '0.8rem', color: '#fff' }}>Clique para ler</p>
                         </div>
                       )}
-                      
+
                       {isRafaWriter && !estaTrancada && (
                         <p style={{ fontSize: '0.7rem', color: carta.lidaPorManu ? '#00ff88' : '#ffb000', margin: '15px 0 0 0', fontWeight: 'bold' }}>
                           {carta.lidaPorManu ? '👀 Ela já leu' : '⏳ Ainda não leu'}
@@ -933,65 +1080,60 @@ const lerCartaDiario = async (carta) => {
         )}
       </AnimatePresence>
 
-      {/* --- INÍCIO DO MODAL DO DIÁRIO CORRIGIDO 2.0 --- */}
       <AnimatePresence>
         {cartaDiarioAtiva && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={styles.overlay} onClick={() => setCartaDiarioAtiva(null)}>
-            
-            {/* 1. CONTAINER PRINCIPAL: Ajuste de padding e box-sizing */}
-            <motion.div 
-              style={{ 
-                ...styles.modalContent, 
-                maxWidth: '500px', 
-                width: '90%', 
-                padding: '40px 20px 20px 20px', /* 40px no topo afasta o título do botão X */
+
+            <motion.div
+              style={{
+                ...styles.modalContent,
+                maxWidth: '500px',
+                width: '90%',
+                padding: '40px 20px 20px 20px', 
                 background: '#fdfbf7',
-                maxHeight: '85vh', 
-                display: 'flex',   
-                flexDirection: 'column', /* Ordem vertical */
-                alignItems: 'center', 
-                boxSizing: 'border-box' /* Impede que o padding quebre a largura no celular */
-              }} 
-              onClick={(e) => e.stopPropagation()} 
+                maxHeight: '85vh',
+                display: 'flex',
+                flexDirection: 'column', 
+                alignItems: 'center',
+                boxSizing: 'border-box' 
+              }}
+              onClick={(e) => e.stopPropagation()}
               transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
-              
-              {/* 2. BOTÃO FECHAR */}
-              <button 
+
+              <button
                 style={{
-                  ...styles.closeBtn, 
+                  ...styles.closeBtn,
                   color: '#333',
-                  top: '15px',    
-                  right: '15px',  
-                  zIndex: 10      
-                }} 
+                  top: '15px',
+                  right: '15px',
+                  zIndex: 10
+                }}
                 onClick={() => setCartaDiarioAtiva(null)}
               >
                 <X />
               </button>
-              
-              {/* 3. TÍTULO: Adicionado width: '100%' para forçar quebra de linha */}
+
               <h2 style={{ color: '#ff85a2', margin: '0 0 20px 0', fontFamily: 'serif', textAlign: 'center', width: '100%', flexShrink: 0 }}>
                 Carta de {cartaDiarioAtiva.dataDesbloqueio.split('-').reverse().join('/')}
               </h2>
-              
-              {/* 4. ÁREA DE TEXTO: Adicionado width: '100%' e textAlign: 'left' no parágrafo */}
+
               <div style={{ overflowY: 'auto', width: '100%', paddingRight: '5px', flexGrow: 1 }}>
-                
+
                 <p style={{ color: '#333', fontSize: '1.1rem', lineHeight: '1.6', fontFamily: 'serif', whiteSpace: 'pre-wrap', margin: 0, textAlign: 'left' }}>
                   {cartaDiarioAtiva.texto}
                 </p>
-                
+
                 <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '10px' }}>
                   <Heart size={24} fill="#ff85a2" color="#ff85a2" />
                 </div>
-                
+
               </div>
 
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>      
+      </AnimatePresence>
       <style>{`
         .custom-romantic-popup .leaflet-popup-content-wrapper { background: rgba(255, 255, 255, 0.95) !important; border-radius: 15px !important; padding: 5px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important; max-width: 250px !important; }
         .custom-romantic-popup .leaflet-popup-tip { background: rgba(255, 255, 255, 0.95) !important; }
@@ -1006,7 +1148,9 @@ const styles = {
   loginCard: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '40px', borderRadius: '20px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.3)' },
   input: { padding: '12px', borderRadius: '10px', border: 'none', marginTop: '15px', textAlign: 'center', width: '200px', outline: 'none' },
   button: { padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#ff85a2', color: '#fff', cursor: 'pointer', marginTop: '15px', fontWeight: 'bold' },
-  
+  popupSurpresaOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 },
+  popupSurpresaContent: { background: '#fdfbf7', padding: '40px', borderRadius: '20px', textAlign: 'center', maxWidth: '400px', width: '90%', border: '2px solid #ff85a2', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' },
+
   header: { position: 'fixed', top: 0, left: 0, width: '100%', padding: '15px 25px', boxSizing: 'border-box', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000 },
   menuToggleBtn: { position: 'relative', pointerEvents: 'auto', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '10px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
   mercadoIconBtn: { pointerEvents: 'auto', border: '2px solid #ff4655', borderRadius: '4px', width: '35px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 0 8px rgba(255, 70, 85, 0.4)', transition: 'background 0.3s', flexShrink: 0, margin: 0 },
@@ -1036,7 +1180,7 @@ const styles = {
   modalContent: { background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', padding: '15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.3)', position: 'relative' },
   modalImgFit: { maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px', objectFit: 'contain' },
   closeBtn: { position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', cursor: 'pointer' },
-  
+
   mercadoMain: { width: '100%', maxWidth: '1000px', textAlign: 'center', marginTop: '100px', padding: '0 10px', boxSizing: 'border-box' },
   mercadoHeader: { color: '#ff4655', fontSize: 'clamp(1.8rem, 8vw, 3rem)', margin: 0, fontWeight: '900', letterSpacing: '2px', textShadow: '2px 2px 10px rgba(0,0,0,0.5)', wordBreak: 'break-word' },
   mercadoGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', padding: '10px' },
@@ -1048,29 +1192,38 @@ const styles = {
   mercadoLabel: { color: '#fff', fontSize: '1.2rem', margin: '20px 0', textTransform: 'uppercase', textShadow: '1px 1px 3px rgba(0,0,0,0.8)' },
   glowEffect: { position: 'absolute', bottom: '-20px', left: '-20px', right: '-20px', height: '60px', filter: 'blur(40px)', opacity: 0.4, zIndex: 1 },
   downloadBtn: { background: '#00ff88', border: 'none', color: '#000', padding: '10px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0, 255, 136, 0.2)' },
-  
+
   cartasTabContainer: { display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' },
   cartasTabBtn: { background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.3s' },
   cartasTabBtnActive: { background: '#ff4655', color: '#fff', border: '1px solid #ff4655', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px rgba(255,70,85,0.4)' },
-  
+
   formContainer: { background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '15px', padding: '30px', maxWidth: '500px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '15px', boxSizing: 'border-box' },
   textArea: { width: '100%', height: '150px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', color: '#fff', padding: '15px', fontSize: '1rem', fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' },
   uploadBtn: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px dashed #ff4655', color: '#ff4655', padding: '15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', transition: '0.3s' },
-  
-  listaCartasContainer: { display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px', width: '100%', margin: '0 auto' },
-  cartaItem: { background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', padding: '20px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px' },
-  cartaData: { color: '#ff85a2', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
-  cartaTexto: { color: '#fff', fontSize: '1rem', lineHeight: '1.5', margin: 0, whiteSpace: 'pre-wrap' },
-  cartaFotoUrl: { width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' },
-  
-  respostaBox: { background: 'rgba(0,255,136,0.1)', borderLeft: '4px solid #00ff88', padding: '15px', borderRadius: '0 8px 8px 0', marginTop: '10px' },
-  respostaTexto: { color: '#fff', fontSize: '0.95rem', fontStyle: 'italic', margin: 0, lineHeight: '1.5', whiteSpace: 'pre-wrap' },
-  btnResponderRafa: { background: 'transparent', border: '1px solid #ff85a2', color: '#ff85a2', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' },
-  textAreaResposta: { width: '100%', height: '80px', background: 'rgba(255, 255, 255, 0.1)', border: '1px solid #ff85a2', borderRadius: '8px', color: '#fff', padding: '10px', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'none', outline: 'none' },
-  btnSalvarResposta: { background: '#ff85a2', border: 'none', color: '#fff', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
-  btnCancelarResposta: { background: 'transparent', border: '1px solid #ccc', color: '#ccc', padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' },
-  btnMarcarLida: { marginTop: '10px', background: 'rgba(255,133,162,0.1)', border: '1px solid #ff85a2', color: '#ff85a2', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', transition: '0.3s' },
 
+  listaCartasContainer: { display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '650px', width: '100%', margin: '0 auto' },
+  
+  // Novo design da carta: Vidro fosco escuro com bordas arredondadas e sombra suave
+  cartaItem: { background: 'rgba(20, 25, 35, 0.6)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255, 133, 162, 0.25)', borderRadius: '24px', padding: '30px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 15px 35px rgba(0,0,0,0.2)', position: 'relative', overflow: 'hidden' },
+  cartaGlowEfeito: { position: 'absolute', top: '-50px', left: '-50px', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(255,133,162,0.15) 0%, rgba(255,133,162,0) 70%)', zIndex: 0, pointerEvents: 'none' },
+  
+  cartaHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', position: 'relative', zIndex: 1 },
+  cartaData: { color: '#ff85a2', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px' },
+  
+  cartaTexto: { color: 'rgba(255, 255, 255, 0.95)', fontSize: '1.05rem', lineHeight: '1.7', margin: '5px 0', whiteSpace: 'pre-wrap', position: 'relative', zIndex: 1, fontFamily: 'serif' },
+  
+  cartaImagemContainer: { width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.3)', margin: '10px 0', position: 'relative', zIndex: 1 },
+  cartaFotoUrl: { width: '100%', maxHeight: '400px', objectFit: 'cover', display: 'block', transition: 'transform 0.3s ease' },
+  
+  // Novo design da caixa de resposta
+  respostaBox: { background: 'linear-gradient(145deg, rgba(0, 255, 136, 0.08) 0%, rgba(0, 0, 0, 0.2) 100%)', border: '1px solid rgba(0, 255, 136, 0.2)', padding: '20px', borderRadius: '16px', marginTop: '15px', position: 'relative', zIndex: 1, boxShadow: 'inset 0 0 20px rgba(0, 255, 136, 0.02)' },
+  respostaTexto: { color: '#e0f7ea', fontSize: '1rem', fontStyle: 'italic', margin: 0, lineHeight: '1.6', whiteSpace: 'pre-wrap' },
+  
+  btnResponderRafa: { background: 'rgba(255, 133, 162, 0.1)', border: '1px solid rgba(255, 133, 162, 0.4)', color: '#ff85a2', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', transition: 'all 0.3s ease', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' },
+  textAreaResposta: { width: '100%', height: '100px', background: 'rgba(0, 0, 0, 0.3)', border: '1px solid #ff85a2', borderRadius: '12px', color: '#fff', padding: '15px', fontSize: '0.95rem', fontFamily: 'inherit', resize: 'none', outline: 'none', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' },
+  btnSalvarResposta: { background: '#ff85a2', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', boxShadow: '0 4px 15px rgba(255,133,162,0.3)' },
+  btnCancelarResposta: { background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: '#ccc', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' },
+  btnMarcarLida: { marginTop: '15px', background: 'rgba(255,133,162,0.15)', border: '1px solid #ff85a2', color: '#ff85a2', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s ease' },
   musicPageBtn: { background: '#fff', color: '#ff85a2', border: 'none', padding: '12px 25px', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', marginTop: '35px' },
   musicGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', padding: '10px', width: '100%', maxWidth: '900px', margin: '0 auto' },
   musicCard: { display: 'flex', background: 'rgba(0, 0, 0, 0.67)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '16px', padding: '15px', alignItems: 'center', gap: '15px', textAlign: 'left', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' },
@@ -1093,7 +1246,7 @@ const styles = {
   timelineDate: { color: '#ff85a2', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' },
   timelineTitle: { color: '#fff', margin: '5px 0 10px 0', fontSize: '1.2rem' },
   timelineText: { color: '#ddd', margin: 0, fontSize: '0.95rem', lineHeight: '1.5' },
-  
+
   mapPageWrapper: { width: '100%', maxWidth: '1200px', marginTop: '90px', padding: '0 10px', boxSizing: 'border-box' },
   mapLayoutContainer: { display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '15px', border: '1px solid rgba(255,255,255,0.1)', flexDirection: 'column' },
   mapSidebar: { width: '100%', display: 'flex', flexDirection: 'row', gap: '10px', overflowX: 'auto', paddingBottom: '8px', boxSizing: 'border-box', WebkitOverflowScrolling: 'touch' },
