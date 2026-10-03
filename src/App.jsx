@@ -885,11 +885,7 @@ export default function App() {
                   ) : cartasList.length === 0 ? (
                     <p style={{ color: '#fff' }}>Nenhuma carta foi enviada ainda. Que tal ser a primeira a escrever?</p>
                   ) : (
-                    cartasList.map((carta, index) => {
-                      // Se for um log de sistema (login), não renderiza se quem estiver logado não for o Rafa
-                      if (carta.isSystemLog && usuarioLogado !== 'rafa') return null;
-
-                      return (
+                    cartasList.map((carta, index) => (
                       <motion.div
                         key={carta.id}
                         initial={{ opacity: 0, y: 30 }}
@@ -953,8 +949,7 @@ export default function App() {
                           </div>
                         )}
                       </motion.div>
-                    );
-                    })
+                    ))
                   )}
                 </div>
               )}
