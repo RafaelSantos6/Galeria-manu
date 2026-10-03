@@ -479,19 +479,12 @@ export default function App() {
       setUsuarioLogado('manu');
       setShowSuccessAnim(true);
 
-      // Dispara a notificação de login silenciosamente para o Rafa
+      // Dispara a notificação de login silenciosamente APENAS no banco de dados para o Rafa monitorar
       try {
         await addDoc(collection(db, "notificacoes_rafa"), {
           tipo: "login",
           mensagem: "A Manu acabou de entrar no site! ❤️",
           dataHora: new Date()
-        });
-
-        // E também salva como um "cartão de sistema" na aba Nossas Cartas para ele visualizar pelo app!
-        await addDoc(collection(db, "cartas_para_rafael"), {
-          texto: "🔔 Log do Sistema: A Manu acabou de entrar no aplicativo! ❤️",
-          data: new Date(),
-          isSystemLog: true
         });
       } catch (errTracking) {
         console.error("Erro ao registrar notificação de login:", errTracking);
