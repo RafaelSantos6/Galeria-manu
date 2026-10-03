@@ -473,11 +473,29 @@ export default function App() {
   const toggleRevelar = (id) => setRevelados(prev => ({ ...prev, [id]: true }));
 
   // --- LÓGICA DE LOGIN AJUSTADA COM O CHECKBOX DO AVISO ---
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (password === '2411') {
       setUsuarioLogado('manu');
       setShowSuccessAnim(true);
+
+      // Dispara a notificação de login silenciosamente para o Rafa
+      try {
+        await addDoc(collection(db, "notificacoes_rafa"), {
+          tipo: "login",
+          mensagem: "A Manu acabou de entrar no site! ❤️",
+          dataHora: new Date()
+        });
+
+        // E também salva como um "cartão de sistema" na aba Nossas Cartas para ele visualizar pelo app!
+        await addDoc(collection(db, "cartas_para_rafael"), {
+          texto: "🔔 Log do Sistema: A Manu acabou de entrar no aplicativo! ❤️",
+          data: new Date(),
+          isSystemLog: true
+        });
+      } catch (errTracking) {
+        console.error("Erro ao registrar notificação de login:", errTracking);
+      }
       
       // Verifica se ela já marcou o "não mostrar novamente" para este texto exato
       const avisoOcultoSalvo = localStorage.getItem('avisoOcultoTexto');
@@ -873,15 +891,18 @@ export default function App() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: index * 0.15, ease: "easeOut" }}
-                        style={styles.cartaItem}
+                        style={{
+                          ...styles.cartaItem,
+                          ...(carta.isSystemLog ? { borderLeft: '4px solid #00ff88', background: 'rgba(0, 255, 136, 0.05)' } : {})
+                        }}
                       >
                         <div style={styles.cartaGlowEfeito}></div>
 
                         <div style={styles.cartaHeader}>
-                          <span style={styles.cartaData}>
-                            {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') : 'Data desconhecida'}
+                          <span style={carta.isSystemLog ? { ...styles.cartaData, color: '#00ff88' } : styles.cartaData}>
+                            {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') + ' às ' + carta.data.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : 'Data desconhecida'}
                           </span>
-                          <Heart size={16} fill="rgba(255,133,162,0.3)" color="#ff85a2" />
+                          {carta.isSystemLog ? <Clock size={16} color="#00ff88" /> : <Heart size={16} fill="rgba(255,133,162,0.3)" color="#ff85a2" />}
                         </div>
 
                         {carta.fotoUrl && (
