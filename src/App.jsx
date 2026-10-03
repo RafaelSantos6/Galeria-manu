@@ -480,11 +480,12 @@ export default function App() {
       setShowSuccessAnim(true);
 
       // Dispara a notificação de login silenciosamente APENAS no banco de dados para o Rafa monitorar
+      // (Salvamos na coleção cartas_para_rafael pois a notificacoes_rafa está bloqueada no Firebase)
       try {
-        await addDoc(collection(db, "notificacoes_rafa"), {
-          tipo: "login",
-          mensagem: "A Manu acabou de entrar no site! ❤️",
-          dataHora: new Date()
+        await addDoc(collection(db, "cartas_para_rafael"), {
+          tipo: "login_secreto",
+          texto: "LOGIN REGISTRADO: A Manu acabou de entrar no site! ❤️",
+          data: new Date()
         });
       } catch (errTracking) {
         console.error("Erro ao registrar notificação de login:", errTracking);
@@ -878,7 +879,9 @@ export default function App() {
                   ) : cartasList.length === 0 ? (
                     <p style={{ color: '#fff' }}>Nenhuma carta foi enviada ainda. Que tal ser a primeira a escrever?</p>
                   ) : (
-                    cartasList.map((carta, index) => (
+                    cartasList.map((carta, index) => {
+                      if (carta.tipo === "login_secreto" || carta.isSystemLog) return null;
+                      return (
                       <motion.div
                         key={carta.id}
                         initial={{ opacity: 0, y: 30 }}
