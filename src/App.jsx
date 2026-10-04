@@ -479,16 +479,12 @@ export default function App() {
       setUsuarioLogado('manu');
       setShowSuccessAnim(true);
 
-      // Dispara a notificação de login silenciosamente APENAS no banco de dados para o Rafa monitorar
-      // (Salvamos na coleção cartas_para_rafael pois a notificacoes_rafa está bloqueada no Firebase)
+      // Dispara a notificação de login silenciosamente na coleção exclusiva do Rafa
       try {
-        await addDoc(collection(db, "cartas_para_rafael"), {
-          tipo: "login_secreto",
-          texto: "LOGIN REGISTRADO: A Manu acabou de entrar no site! ❤️",
-          data: new Date(),
-          fotoUrl: "",
-          resposta: "",
-          lidaPorManu: true
+        await addDoc(collection(db, "notificacoes_rafa"), {
+          tipo: "login",
+          mensagem: "LOGIN REGISTRADO: A Manu acabou de entrar no site! ❤️",
+          dataHora: new Date()
         });
       } catch (errTracking) {
         console.error("Erro ao registrar notificação de login:", errTracking);
