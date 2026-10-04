@@ -879,26 +879,23 @@ export default function App() {
                   ) : cartasList.length === 0 ? (
                     <p style={{ color: '#fff' }}>Nenhuma carta foi enviada ainda. Que tal ser a primeira a escrever?</p>
                   ) : (
-                    cartasList.map((carta, index) => {
-                      if (carta.tipo === "login_secreto" || carta.isSystemLog) return null;
-                      return (
+                    cartasList
+                      .filter(carta => !carta.isSystemLog && carta.tipo !== "login_secreto" && !(carta.texto || "").includes("Log do Sistema"))
+                      .map((carta, index) => (
                       <motion.div
                         key={carta.id}
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: index * 0.15, ease: "easeOut" }}
-                        style={{
-                          ...styles.cartaItem,
-                          ...(carta.isSystemLog ? { borderLeft: '4px solid #00ff88', background: 'rgba(0, 255, 136, 0.05)' } : {})
-                        }}
+                        style={styles.cartaItem}
                       >
                         <div style={styles.cartaGlowEfeito}></div>
 
                         <div style={styles.cartaHeader}>
-                          <span style={carta.isSystemLog ? { ...styles.cartaData, color: '#00ff88' } : styles.cartaData}>
-                            {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') + ' às ' + carta.data.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : 'Data desconhecida'}
+                          <span style={styles.cartaData}>
+                            {carta.data?.toDate ? carta.data.toDate().toLocaleDateString('pt-BR') : 'Data desconhecida'}
                           </span>
-                          {carta.isSystemLog ? <Clock size={16} color="#00ff88" /> : <Heart size={16} fill="rgba(255,133,162,0.3)" color="#ff85a2" />}
+                          <Heart size={16} fill="rgba(255,133,162,0.3)" color="#ff85a2" />
                         </div>
 
                         {carta.fotoUrl && (
@@ -945,8 +942,7 @@ export default function App() {
                           </div>
                         )}
                       </motion.div>
-                    );
-                    })
+                    ))
                   )}
                 </div>
               )}
