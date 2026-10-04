@@ -561,7 +561,7 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ ...styles.container, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ ...styles.container, overflowX: 'hidden', overflowY: 'hidden', position: 'relative' }}>
 
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 0 }}>
           {coracoesIniciais.map((c) => (
