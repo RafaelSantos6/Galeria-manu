@@ -485,7 +485,10 @@ export default function App() {
         await addDoc(collection(db, "cartas_para_rafael"), {
           tipo: "login_secreto",
           texto: "LOGIN REGISTRADO: A Manu acabou de entrar no site! ❤️",
-          data: new Date()
+          data: new Date(),
+          fotoUrl: "",
+          resposta: "",
+          lidaPorManu: true
         });
       } catch (errTracking) {
         console.error("Erro ao registrar notificação de login:", errTracking);
